@@ -114,6 +114,28 @@ def build():
     summary["B7"] = f"{start:%m/%d/%Y} - {end:%m/%d/%Y}"
     qc = wb["QC"] if "QC" in wb else wb.create_sheet("QC")
     qc.append(["Tab", "Site ID", "Network", "Status", "Details", "Source URL"])
+    # Remove old/example observations from a reused template before collecting.
+    # Station metadata, names, links, and WeatherFlow manual values remain intact.
+    for sheet_name, first_col, last_col in (
+        ("Rainfall", 8, 10),
+        ("Water Level", 7, 7),
+        ("Water Level", 9, 12),
+        ("Water Level", 14, 15),
+    ):
+        sheet = wb[sheet_name]
+        for row_num in range(2, sheet.max_row + 1):
+            sid = str(sheet.cell(row_num, 1).value or "").strip()
+            if not sid or sid.startswith("["): continue
+            if "WXFLOW" in str(sheet.cell(row_num, 7).value or "").upper(): continue
+            for col in range(first_col, last_col + 1):
+                sheet.cell(row_num, col).value = None
+    # Sample tornado placeholders aren't verified tornadoes.
+    tornado = wb["Tornadoes"]
+    for row_num in range(2, tornado.max_row + 1):
+        first = str(tornado.cell(row_num, 1).value or "")
+        if first.startswith("[Insert"):
+            for col in range(1, 12):
+                tornado.cell(row_num, col).value = None
     totals = Counter()
     for row in range(2, wind.max_row + 1):
         sid = str(wind.cell(row, 1).value or "").strip()
@@ -123,12 +145,12 @@ def build():
         if "WXFLOW" in network or "WEATHERFLOW" in network:
             totals["weatherflow_manual"] += 1
             continue
+        # Clear stale wind/pressure measurements on all non-WeatherFlow stations.
+        for col in range(11, 31):
+            wind.cell(row, col).value = None
         if network not in ("ASOS", "AWOS"):
             totals["other_network_pending"] += 1
             continue
-        # Clear example/previous-event values only for the stations being re-collected.
-        for col in range(11, 28):
-            wind.cell(row, col).value = None
         station = site_id(sid)
         try:
             samples, url = fetch_iem(station, start, end)
