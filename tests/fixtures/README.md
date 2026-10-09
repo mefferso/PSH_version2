@@ -14,3 +14,5 @@ Known upstream discrepancy: Tiger Stadium native WeatherSTEM gust was reported
 as 44.32 kt versus 48 kt issued. Do not alter the reference or increase tolerances
 to hide this discrepancy. Max-minute anemometer values are not automatically
 proof of the PSH sustained-wind averaging convention.
+
+`iem_hml_BBOL1_20240910-12.csv` is an unmodified live IEM HML CSV captured October 9, 2026 from https://mesonet.agron.iastate.edu/cgi-bin/request/hml.py?station=BBOL1&kind=obs&tz=UTC&fmt=csv&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13 . Its explicit `valid[UTC]` and `Stage[ft]` headers verify the historical retrieval contract; its 4.4-foot stage maximum is not asserted to be NAVD88 or inundation. No datum offset is inferred from this fixture.

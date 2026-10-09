@@ -31,6 +31,7 @@ def offset(entry,station,start,end):
 
 def parse_hml(text,station,start,end):
     reader=csv.DictReader(io.StringIO(text))
+    if reader.fieldnames:reader.fieldnames=[name.strip().lower() for name in reader.fieldnames]
     if not reader.fieldnames or not {'station','valid[utc]','stage[ft]'}.issubset(reader.fieldnames):
         raise ValueError('HML requires explicit stage[ft] and valid[utc] headers')
     a,b=bounds(start,end);rows=[]
@@ -49,27 +50,43 @@ def collect(station,start,end,session=requests):
     r.raise_for_status();return parse_hml(r.text,station,start,end),r.url
 
 def populate(wb,qc,start,end,counts,audit):
-    if not os.environ.get('PSH_DATUM_REGISTRY'):return
-    entries=json.loads(Path(os.environ['PSH_DATUM_REGISTRY']).read_text());a,b=bounds(start,end)
+    from collections import Counter
+    from concurrent.futures import ThreadPoolExecutor
+    path=os.environ.get('PSH_DATUM_REGISTRY')
+    entries=json.loads(Path(path).read_text()) if path else [];a,b=bounds(start,end)
     if len({x['site_id'] for x in entries})!=len(entries):raise ValueError('Duplicate IDs in datum registry')
     registry={x['site_id']:x for x in entries}
-    for st in inventory(wb,'Water Level'):
-        if st['network'] not in ('USACE','LA CPRA') or st['id'] not in registry:continue
+    all_stations=list(inventory(wb,'Water Level'));duplicates=Counter(st['id'] for st in all_stations)
+    stations=[st for st in all_stations if st['network'] in ('USACE','LA CPRA')]
+    eligible=[st for st in stations if duplicates[st['id']]==1 and station_link(wb['Water Level'].cell(st['row'],1))]
+    def fetch(st):
+        try:return st['id'],collect(st['id'],start,end)
+        except (requests.RequestException,ValueError) as exc:return st['id'],exc
+    with ThreadPoolExecutor(max_workers=4) as pool:cache=dict(pool.map(fetch,eligible))
+    for st in stations:
+        if duplicates[st['id']]>1:
+            qc.append(['Water Level',st['id'],st['network'],'AMBIGUOUS ID','Duplicate inventory identifier; HML mapping and conversion withheld',st['url']]);continue
+        if st['id'] not in cache:
+            qc.append(['Water Level',st['id'],st['network'],'UNSUPPORTED','No valid original RiverGages station hyperlink; no historical mapping invented',st['url']]);continue
+        result=cache[st['id']]
+        if isinstance(result,Exception):
+            qc.append(['Water Level',st['id'],st['network'],'ERROR','Historical HML stage request/schema unavailable: '+type(result).__name__,HML]);counts['registry_water_errors']+=1;continue
+        rows,url=result
+        if not rows:
+            qc.append(['Water Level',st['id'],st['network'],'NO DATA','No exact-ID historical HML stage readings',url]);continue
+        raw,t=max(rows,key=lambda x:x[0])
+        counts['historical_stage_series_retrieved']+=1
+        if st['id'] not in registry:
+            qc.append(['Water Level',st['id'],st['network'],'DATUM REVIEW',
+                f'{len(rows)} exact-ID HML observations; available stage peak {raw} ft gage stage at {t.isoformat()}. NOT NAVD88/inundation; no workbook elevation inserted without independently reviewed event-effective datum evidence.',url]);continue
         record=registry[st['id']]
-        # Registry validation errors fail the build; access errors are per-source QC.
-        adjustment=offset(record,st,a,b)
-        try:
-            rows,url=collect(st['id'],start,end)
-            if not rows:
-                qc.append(['Water Level',st['id'],st['network'],'NO DATA','No exact-ID HML stage readings',url]);continue
-            raw,t=max(rows,key=lambda x:x[0]);value=finite(raw+adjustment,-30,100)
-            if value is None:raise ValueError('Converted elevation outside QC range')
-            s=wb['Water Level'];s.cell(st['row'],7).value=round(value,2);s.cell(st['row'],8).value='NAVD88'
-            for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):s.cell(st['row'],9+n).value=v
-            s.cell(st['row'],14).value='I'
-            audit.add('Water Level',st['row'],st['id'],'water',round(value,2),'ft',t,url,datum='NAVD88',
-                evidence=record['evidence'],raw_value=raw,raw_unit='ft gage stage',
-                details=f'Human-reviewed event-effective registry: stage + {adjustment} ft; effective {record["effective_start_utc"]} to {record["effective_end_utc"]}')
-            qc.append(['Water Level',st['id'],st['network'],'REVIEW REQUIRED','Registry conversion applied; independent citations in provenance',url]);counts['registry_water_collected']+=1
-        except requests.RequestException:
-            qc.append(['Water Level',st['id'],st['network'],'ERROR','HML historical stage request unavailable',HML]);counts['registry_water_errors']+=1
+        # Invalid reviewed metadata fails the build; stage alone never establishes elevation.
+        adjustment=offset(record,st,a,b);value=finite(raw+adjustment,-30,100)
+        if value is None:raise ValueError('Converted elevation outside QC range')
+        s=wb['Water Level'];s.cell(st['row'],7).value=round(value,2);s.cell(st['row'],8).value='NAVD88'
+        for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):s.cell(st['row'],9+n).value=v
+        s.cell(st['row'],14).value='I'
+        audit.add('Water Level',st['row'],st['id'],'water',round(value,2),'ft',t,url,datum='NAVD88',
+            evidence=record['evidence'],raw_value=raw,raw_unit='ft gage stage',
+            details=f'Human-reviewed event-effective registry: stage + {adjustment} ft; effective {record["effective_start_utc"]} to {record["effective_end_utc"]}')
+        qc.append(['Water Level',st['id'],st['network'],'REVIEW REQUIRED','Registry conversion applied; independent citations in provenance',url]);counts['registry_water_collected']+=1
