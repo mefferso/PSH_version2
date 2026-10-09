@@ -41,3 +41,8 @@ Do not use Actions' **Re-run jobs** on runs created before the dashboard workflo
 ### NDBC collector (new, awaiting live regression check)
 
 Linked NDBC Buoy, C-MAN, and WLON stations are retrieved using the source station ID (not a nearby substitute). The adapter prefers the NDBC last-45-days feed for recent dates and attempts annual standard-meteorological archives for older dates. Winds/gusts convert from m/s to knots; sea-level pressure remains hPa/mb. Missing values are excluded, and each independently timed extreme populates the existing Wind and Pressure columns. Data that cannot be retrieved is shown as **NO DATA/ERROR** in QC, not as a successful observation. NDBC sampling periods and metadata vary by station; validate these against the station page before operational use. Please initiate a **new** workflow run to test these changes. The workflow includes NDBC parser unit tests.
+
+
+### RiverGages USACE / Louisiana CPRA audit
+
+The source inventory now checks original RiverGages station hyperlinks against the station source (USACE or LA CPRA) and writes each match into the QC tab with a **DATUM REVIEW** status. Many RiverGages series are stage with station-specific gage zero, historical NAVD88 adjustments and effective dates. There is **no automated USACE/CPRA water-level ingestion yet**; this audit does not count as collected data. Before numerical collection is implemented, each site needs an independently verified datum and archive endpoint. Unverified stage-to-NAVD88 conversions remain prohibited.
