@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PSH Version 2 | LIX Review</title>
+<style>
+:root{font-family:system-ui,-apple-system,Segoe UI,sans-serif;color:#e8edf7;background:#0a1220}*{box-sizing:border-box}
+body{margin:0}header{padding:26px max(3vw,20px);background:#132238;border-bottom:1px solid #33445b}
+h1{margin:0 0 5px;font-size:25px}header p{margin:0;color:#afc2d9}.shell{padding:22px max(3vw,20px)}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:15px 0}
+.stat{background:#142339;border:1px solid #30435f;border-radius:12px;padding:16px}.stat strong{display:block;font-size:25px;margin:6px 0}.muted{color:#a8b9cf}
+.warning{border-left:4px solid #edb767;background:#282414;padding:12px 16px;margin:16px 0;border-radius:5px}
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0 12px}
+button,a.btn{background:#1b304d;border:1px solid #3e5878;color:#f4f8ff;border-radius:8px;padding:9px 13px;cursor:pointer;font:inherit;text-decoration:none}
+button.active{background:#2969b5;border-color:#88aee0}button:hover,a.btn:hover{background:#31547d}
+input{padding:10px 13px;background:#0e1929;border:1px solid #445875;color:white;border-radius:8px;min-width:220px}
+.tablewrap{max-height:65vh;overflow:auto;border:1px solid #30435f;border-radius:10px}
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;white-space:nowrap}
+th,td{padding:9px 12px;border-bottom:1px solid #253a53;text-align:left;max-width:380px;overflow:hidden;text-overflow:ellipsis}
+th{position:sticky;top:0;background:#203551;color:#eaf2ff;z-index:2}
+tbody tr:nth-child(even){background:#111f31}tbody tr:hover{background:#233b56}
+td a{color:#8ccaff;text-decoration:underline} .note{margin:12px 0;color:#afc2d9}.error{color:#ffb4b4}
+</style></head>
+<body><header><h1>🌀 PSH Version 2 <span class="muted">/ LIX</span></h1><p>Automated observation review · GitHub Pages</p></header>
+<main class="shell"><div id="title">Loading latest run…</div><div class="stats" id="stats"></div>
+<div class="warning"><b>Development / incomplete data.</b> Only archived ASOS/AWOS wind and pressure collection is implemented. Other networks and summary formulas are not complete. WeatherFlow remains manual. Do not use this preview as an operational PSH.</div>
+<div class="controls"><div id="tabs" style="display:flex;gap:7px;flex-wrap:wrap"></div><input aria-label="Filter displayed rows" id="search" placeholder="Filter stations / values…" /><a class="btn" id="download" href="#">Download current XLSX</a></div>
+<p class="note" id="message"></p><div class="tablewrap"><table><thead id="heads"></thead><tbody id="rows"></tbody></table></div>
+<p class="note">Source links appear on linked station IDs. Values are not independently verified; consult the QC tab before using them.</p></main>
+<script>
+let payload,active;
+const $=id=>document.getElementById(id);
+const str=v=>v===null||v===undefined?'':String(v);
+const esc=s=>str(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function render(){
+ const tab=payload.tabs[active], term=$('search').value.toLowerCase();
+ $('tabs').innerHTML=Object.keys(payload.tabs).map(n=>'<button class="'+(n===active?'active':'')+'" data-tab="'+esc(n)+'">'+esc(n)+'</button>').join('');
+ document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;render()});
+ $('message').textContent=tab.notice||((tab.rows||[]).length+' rows available · '+tab.status);
+ const rows=(tab.rows||[]).filter(r=>r.v.some(x=>str(x).toLowerCase().includes(term)));
+ // Suppress entirely empty columns; keep alignment and original order.
+ const present=tab.headers.map((_,i)=>i).filter(i=>tab.headers[i]!==null&&tab.headers[i]!==''||rows.some(r=>r.v[i]!==null&&r.v[i]!==''));
+ $('heads').innerHTML='<tr>'+present.map(i=>'<th>'+esc(tab.headers[i]||('Column '+(i+1)))+'</th>').join('')+'</tr>';
+ $('rows').innerHTML=rows.slice(0,2000).map(r=>'<tr>'+present.map(i=>{const v=esc(r.v[i]);const url=r.links[String(i)];return '<td title="'+v+'">'+(url&&/^https?:\/\//.test(url)?'<a href="'+esc(url)+'" target="_blank" rel="noopener noreferrer">'+v+'</a>':v)+'</td>'}).join('')+'</tr>').join('');
+ if(!rows.length)$('rows').innerHTML='<tr><td>No matching rows (or this tab has no calculated data)</td></tr>';
+}
+fetch('data/latest.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Latest-run data not yet published');return r.json()}).then(p=>{
+ payload=p;active=p.tabs['Wind and Pressure']?'Wind and Pressure':Object.keys(p.tabs)[0];
+ $('title').innerHTML='<h2>'+esc(p.meta.storm)+'</h2><span class="muted">'+esc(p.meta.start_utc)+' through '+esc(p.meta.end_utc)+' · '+esc(p.meta.coverage)+'</span>';
+ const c=p.meta.counts||{};$('stats').innerHTML=[['Collected',c.COLLECTED||0],['Partial',c.PARTIAL||0],['No Data',c['NO DATA']||0],['Other networks pending',c.other_network_pending||0],['WeatherFlow manual',c.weatherflow_manual||0]].map(([k,v])=>'<div class="stat"><span class="muted">'+esc(k)+'</span><strong>'+esc(v)+'</strong></div>').join('');
+ $('download').href=encodeURIComponent(p.download);$('search').oninput=render;render();
+}).catch(e=>{$('title').innerHTML='<p class="error">'+esc(e.message)+'</p><p>Run the Build PSH workbook workflow to publish the first dataset.</p>'});
+</script></body></html>
