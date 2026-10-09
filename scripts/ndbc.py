@@ -7,6 +7,7 @@ import time
 from urllib.parse import urlparse, parse_qs
 import requests
 from openpyxl.cell.cell import MergedCell
+from common import identifier, inventory
 
 KNOTS_PER_MS = 1.9438444924406
 ALLOWED = {"BUOY", "CMAN", "C-MAN", "WLON", "NDBC"}
@@ -26,6 +27,7 @@ def station_id(cell):
 
 def parse_text(content, start, end):
     headings = None
+    units_verified = False
     obs = []
     for line in content.splitlines():
         line = line.strip()
@@ -36,8 +38,16 @@ def parse_text(content, start, end):
         if "WSPD" in normalized and "PRES" in normalized and ("YY" in normalized or "YYYY" in normalized):
             headings = normalized
             continue
+        if headings is not None and line.startswith("#") and "m/s" in fields:
+            units = dict(zip(headings,fields))
+            if units.get("WSPD") != "m/s" or units.get("GST") != "m/s" or units.get("PRES") not in ("hPa","mb"):
+                raise ValueError("Unsupported NDBC units")
+            units_verified = True
+            continue
         if headings is None or line.startswith("#"):
             continue
+        if not units_verified:
+            raise ValueError("NDBC unit row missing or unsupported")
         if len(fields) < len(headings):
             continue
         row = dict(zip(headings, fields))
@@ -84,9 +94,12 @@ def retrieve(station, start, end, session=requests):
             r = session.get(url, timeout=45, headers={"User-Agent":"LIX-PSH-V2/0.3"})
             if r.status_code == 404: continue
             r.raise_for_status()
-            samples.extend(parse_text(r.text, start, end))
-        except (requests.RequestException, ValueError) as exc:
-            errors.append(f"{url}: {str(exc)[:90]}")
+            content = gzip.decompress(r.content).decode("utf-8") if r.content[:2] == b"\x1f\x8b" else r.text
+            for sample in parse_text(content, start, end):
+                sample["url"] = r.url
+                samples.append(sample)
+        except (requests.RequestException, ValueError, OSError, UnicodeError) as exc:
+            errors.append(f"{url}: {type(exc).__name__}")
     dedup = {s["time"]:s for s in samples}
     return sorted(dedup.values(), key=lambda x:x["time"]), urls, errors
 
@@ -101,28 +114,35 @@ def setpeak(sheet, r, col, peak, dircol=None):
     for j,part in enumerate((when.strftime("%H%M"),when.day,when.month,when.year)):
         sheet.cell(r,offset+j).value = part
 
-def populate(workbook, qc, start, end, counts):
+def populate(workbook, qc, start, end, counts, audit=None):
     sheet = workbook["Wind and Pressure"]
     for row in range(2,sheet.max_row+1):
-        site = str(sheet.cell(row,1).value or "").strip()
+        site = identifier(sheet.cell(row,1).value)
         network = str(sheet.cell(row,8).value or "").strip().upper()
         station = station_id(sheet.cell(row,1))
-        if not station or network not in ALLOWED or not site:
+        if not station or not site:
             continue
-        # Preserve source IDs and metadata; no ASOS/AWOS overwrite.
-        for col in range(11,31):
-            cell=sheet.cell(row,col)
-            if not isinstance(cell,MergedCell):
-                cell.value=None
         try:
             obs,urls,errors=retrieve(station,start,end)
             def peak(field,reverse=True):
                 good=[(v[field],v) for v in obs if v[field] is not None]
                 return (max if reverse else min)(good,key=lambda x:x[0]) if good else None
             w,g,p=peak("wind"),peak("gust"),peak("pressure",False)
-            setpeak(sheet,row,11,w,12)
-            setpeak(sheet,row,17,g,18)
-            setpeak(sheet,row,23,p)
+            # Keep IEM observations when both feeds describe the same linked AWOS.
+            for field,col,dircol,extreme in (("wind",11,12,w),("gust",17,None,g),("pressure",23,None,p)):
+                if extreme is None or sheet.cell(row,col).value is not None:continue
+                if field == "gust":
+                    setpeak(sheet,row,col,extreme,18)
+                    # WDIR describes the mean wind, not a separately measured gust bearing.
+                    sheet.cell(row,18).value=None
+                else:setpeak(sheet,row,col,extreme,dircol)
+                if audit:
+                    value,sample=extreme
+                    audit.add("Wind and Pressure",row,site,field,round(value,1),"hPa" if field=="pressure" else "kn",
+                              sample["time"],sample["url"],raw_value=value if field=="pressure" else value/KNOTS_PER_MS,
+                              raw_unit="hPa" if field=="pressure" else "m/s",details="NDBC header units verified; sampling and coverage require review")
+            sheet.cell(row,28).value="I";sheet.cell(row,29).value="A"
+            sheet.cell(row,30).value="NDBC sampling/exposure review; gust direction unavailable"
             collected=sum(x is not None for x in (w,g,p))
             status="COLLECTED" if collected==3 else "PARTIAL" if collected else "NO DATA"
             if errors and not obs: status="ERROR"

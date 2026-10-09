@@ -33,3 +33,8 @@ class NDBCTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class NDBCSafetyTests(unittest.TestCase):
+    def test_wrong_units_are_not_interpreted_as_metres_per_second(self):
+        sample='#YY MM DD hh mm WDIR WSPD GST PRES\n#yr mo dy hr mn degT mph mph hPa\n2024 09 11 12 00 90 50 60 990\n'
+        with self.assertRaises(ValueError):parse_text(sample,dt.date(2024,9,11),dt.date(2024,9,11))

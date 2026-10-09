@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 from openpyxl.cell.cell import MergedCell
+from common import finite, inventory
 
 BASE = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 
@@ -16,6 +17,22 @@ def station_from_cell(cell):
         return None
     sid = parse_qs(url.query).get("id", [""])[0]
     return sid if re.fullmatch(r"[0-9]{7}", sid) else None
+
+DATUM_URL = "https://api.tidesandcurrents.noaa.gov/mdapi/prod/webapi/stations/{station}/datums.json"
+
+def verify_datums(payload, station):
+    reported = str(payload.get("id") or station)
+    if reported != station: raise ValueError("Datum station identity mismatch")
+    if not any(x.get("name") == "MHHW" and finite(x.get("value")) is not None
+               for x in payload.get("datums", [])):
+        raise ValueError("MHHW datum is not explicitly available for this station")
+    return True
+
+def datum_evidence(station, session=requests):
+    r = session.get(DATUM_URL.format(station=station), params={"units":"english"}, timeout=20)
+    r.raise_for_status()
+    verify_datums(r.json(), station)
+    return r.url
 
 def collect(station, start, end, session=requests):
     all_values = []
@@ -41,16 +58,17 @@ def collect(station, start, end, session=requests):
             raise ValueError("Station identity mismatch")
         for entry in payload.get("data", []):
             try:
-                reading = float(entry["v"])
+                reading = finite(entry["v"], -30, 40)
                 timestamp = dt.datetime.strptime(entry["t"], "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc)
             except (KeyError, ValueError, TypeError):
                 continue
-            if -30 < reading < 40 and start <= timestamp.date() <= end:
+            if reading is not None and start <= timestamp.date() <= end:
+                entry = dict(entry, source_url=response.url)
                 all_values.append((reading, timestamp, entry))
         cursor = stop + dt.timedelta(days=1)
     return (max(all_values, key=lambda x: x[0]) if all_values else None), links
 
-def populate(workbook, qc, start, end, counts):
+def populate(workbook, qc, start, end, counts, audit=None):
     sheet = workbook["Water Level"]
     for row in range(2, sheet.max_row + 1):
         site_id = str(sheet.cell(row, 1).value or "").strip()
@@ -66,12 +84,17 @@ def populate(workbook, qc, start, end, counts):
             if not isinstance(cell, MergedCell):
                 cell.value = None
         try:
+            evidence = datum_evidence(station)
             peak, urls = collect(station, start, end)
             if peak is None:
                 counts["coops_no_data"] += 1
                 qc.append(["Water Level", site_id, "NOS", "NO DATA", "No valid MHHW readings", urls[0] if urls else ""])
                 continue
             value, when, raw = peak
+            if audit:
+                audit.add("Water Level",row,site_id,"water",round(value,2),"ft",when,
+                          raw["source_url"],datum="MHHW",evidence=evidence,raw_value=value,
+                          details="CO-OPS q="+str(raw.get("q"))+" f="+str(raw.get("f")))
             sheet.cell(row, 7).value = round(value, 2)
             sheet.cell(row, 8).value = "MHHW"
             sheet.cell(row, 9).value = when.strftime("%H%M")
@@ -88,6 +111,6 @@ def populate(workbook, qc, start, end, counts):
                        urls[0] if urls else ""])
         except Exception as exc:
             counts["coops_errors"] += 1
-            qc.append(["Water Level", site_id, "NOS", "ERROR", str(exc)[:240],
+            qc.append(["Water Level", site_id, "NOS", "ERROR", type(exc).__name__+": datum/data request unsuccessful",
                        f"https://tidesandcurrents.noaa.gov/stationhome.html?id={station}"])
         time.sleep(0.1)

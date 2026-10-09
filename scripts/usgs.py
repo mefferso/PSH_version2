@@ -10,6 +10,7 @@ import time
 from urllib.parse import urlparse
 import requests
 from openpyxl.cell.cell import MergedCell
+from common import inventory
 
 BASE = "https://api.waterdata.usgs.gov/ogcapi/v1/collections/continuous/items"
 PARAMETERS = ("62620", "62615")
@@ -63,7 +64,8 @@ def collect(site, start, end, session=requests):
         if data.get("type") != "FeatureCollection":
             raise ValueError("Unexpected USGS API response")
         urls.append(response.url)
-        readings.extend(parse_observations(data, site, start, end))
+        for value, moment, meta in parse_observations(data, site, start, end):
+            readings.append((value, moment, dict(meta, source_url=response.url)))
         following = [x.get("href") for x in data.get("links", []) if x.get("rel") == "next"]
         if not following:
             break
@@ -74,9 +76,12 @@ def collect(site, start, end, session=requests):
         raise ValueError("USGS pagination limit reached; incomplete series discarded")
     if not readings:
         return None, urls
+    series = {(x[2].get("time_series_id"), x[2].get("parameter_code")) for x in readings}
+    if len(series) > 1:
+        raise ValueError("Multiple USGS series/parameters; explicit series selection required")
     return max(readings, key=lambda x:x[0]), urls
 
-def populate(wb, qc, start, end, counts):
+def populate(wb, qc, start, end, counts, audit=None):
     sheet = wb["Water Level"]
     for row in range(2, sheet.max_row + 1):
         site = str(sheet.cell(row, 1).value or "").strip()
@@ -102,6 +107,10 @@ def populate(wb, qc, start, end, counts):
                            urls[0] if urls else ""])
                 continue
             value, moment, meta = peak
+            if audit:
+                audit.add("Water Level",row,site,"water",round(value,2),"ft",moment,
+                          meta["source_url"],datum="NAVD88",evidence="https://help.waterdata.usgs.gov/codes-and-parameters/parameters",
+                          raw_value=value,details="Direct parameter "+str(meta.get("parameter_code"))+"; provisional/parameter metadata review required")
             sheet.cell(row,7).value = round(value,2)
             sheet.cell(row,8).value = "NAVD88"
             sheet.cell(row,9).value = moment.strftime("%H%M")
@@ -117,6 +126,6 @@ def populate(wb, qc, start, end, counts):
                        urls[0] if urls else ""])
         except Exception as exc:
             counts["usgs_errors"] += 1
-            qc.append(["Water Level",site,"USGS","ERROR",str(exc)[:240],
+            qc.append(["Water Level",site,"USGS","ERROR",type(exc).__name__+": direct NAVD88 request unsuccessful",
                        "https://waterdata.usgs.gov/monitoring-location/"+usgs+"/"])
         time.sleep(0.1)

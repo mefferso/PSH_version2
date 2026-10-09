@@ -39,3 +39,12 @@ class USGSTests(unittest.TestCase):
         self.assertEqual(len(links),1)
 
 if __name__=="__main__": unittest.main()
+
+class USGSSafetyTests(unittest.TestCase):
+    def test_different_elevation_series_are_not_combined(self):
+        response=Mock();response.url='https://api.waterdata.usgs.gov/ogcapi/v1/collections/continuous/items'
+        response.json.return_value={'type':'FeatureCollection','features':[{'properties':{
+            'monitoring_location_id':'USGS-07374527','parameter_code':code,'time_series_id':code,
+            'unit_of_measure':'ft','value':'3','time':'2024-09-11T12:00:00Z'}} for code in ('62620','62615')], 'links':[]}
+        session=Mock();session.get.return_value=response
+        with self.assertRaises(ValueError):collect('07374527',dt.date(2024,9,11),dt.date(2024,9,11),session)

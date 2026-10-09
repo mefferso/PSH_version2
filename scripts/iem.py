@@ -1,0 +1,100 @@
+"""IEM archived METAR observations. Never sum overlapping rolling rain reports."""
+import csv
+import datetime as dt
+import io
+import requests
+from common import UTC,bounds,finite,identifier,inventory,interval_total
+
+URL='https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py'
+
+def station_id(value):
+    sid=identifier(value).upper()
+    return sid[1:] if len(sid)==4 and sid.startswith('K') else sid
+
+def parse(text,station,start,end):
+    reader=csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames or not {'station','valid'}.issubset(reader.fieldnames):
+        raise ValueError('IEM CSV missing station identity or valid time')
+    begin,stop=bounds(start,end);rows=[]
+    for raw in reader:
+        if station_id(raw.get('station'))!=station_id(station):continue
+        try:t=dt.datetime.strptime(raw['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=UTC)
+        except (ValueError,TypeError):continue
+        if not begin<=t<stop:continue
+        rows.append({'time':t,'wind':finite(raw.get('sknt'),0,180),'gust':finite(raw.get('gust'),0,200),
+                     'dir':finite(raw.get('drct'),0,360),'pressure':finite(raw.get('mslp'),850,1100),
+                     'rain':finite(raw.get('p01i'),0,25),'trace':raw.get('p01i')=='T',
+                     'report_type':finite(raw.get('report_type')),'raw':raw})
+    return rows
+
+def collect(station,start,end,session=requests):
+    stop=end+dt.timedelta(days=1)
+    params={'station':station_id(station),'data':['sknt','gust','drct','mslp','p01i','metar'],
+            'year1':start.year,'month1':start.month,'day1':start.day,
+            'year2':stop.year,'month2':stop.month,'day2':stop.day,
+            'tz':'Etc/UTC','format':'onlycomma','latlon':'no','missing':'M','trace':'T','direct':'no',
+            'report_type':[3,4]}
+    r=session.get(URL,params=params,timeout=30);r.raise_for_status()
+    rows=parse(r.text,station,start,end)
+    for row in rows:row['url']=r.url
+    return rows,r.url
+
+def rain_total(rows,start,end):
+    periods={}
+    for row in rows:
+        # Routine METAR hourly accumulations only; SPECI overlaps are not added.
+        if row.get('report_type')!=3:continue
+        t=row['time'];begin=t-dt.timedelta(hours=1)
+        if begin<start or t>end:continue
+        v=row.get('rain');key=(begin,t)
+        if key in periods and periods[key]!=v:return None
+        periods[key]=v
+    return interval_total([(a,b,v) for (a,b),v in periods.items()],start,end)
+
+def write_wind(sheet,r,rows,site,audit,default_url,details):
+    written=0
+    for field,col,dircol in [('wind',11,12),('gust',17,18),('pressure',23,None)]:
+        good=[x for x in rows if x.get(field) is not None]
+        if not good:continue
+        sample=(min if field=='pressure' else max)(good,key=lambda x:x[field]);value=sample[field];t=sample['time']
+        sheet.cell(r,col).value=round(value,1)
+        direction=sample.get('gust_dir',sample.get('dir')) if field=='gust' else sample.get('dir')
+        if dircol and direction is not None:sheet.cell(r,dircol).value=round(direction)
+        offset=col+2 if dircol else col+1
+        for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):sheet.cell(r,offset+n).value=v
+        audit.add('Wind and Pressure',r,site,field,round(value,1),'hPa' if field=='pressure' else 'kn',t,
+                  sample.get('url') or default_url,raw_value=value,status='REVIEW REQUIRED',details=details)
+        written+=1
+    sheet.cell(r,28).value='I';sheet.cell(r,29).value='A'
+    sheet.cell(r,30).value=details+'; sampling/coverage and station exposure require review'
+    return written
+
+def populate(wb,qc,start,end,counts,audit):
+    cache={}
+    def get(site):
+        sid=station_id(site)
+        if sid not in cache:
+            try:cache[sid]=collect(sid,start,end)
+            except requests.RequestException as e:cache[sid]=ValueError('IEM request failed: '+type(e).__name__)
+            except ValueError as e:cache[sid]=e
+        if isinstance(cache[sid],Exception):raise cache[sid]
+        return cache[sid]
+    for tab in ('Wind and Pressure','Rainfall'):
+        s=wb[tab]
+        for st in inventory(wb,tab):
+            if st['network'].upper() not in ('ASOS','AWOS'):continue
+            try:
+                rows,url=get(st['id']);r=st['row']
+                if tab=='Wind and Pressure':
+                    n=write_wind(s,r,rows,st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
+                    status='REVIEW REQUIRED' if n else 'NO DATA';detail=f'{len(rows)} samples; {n}/3 variables; UTC window'
+                else:
+                    a,b=bounds(start,end);total=rain_total(rows,a,b)
+                    status='REVIEW REQUIRED' if total is not None else 'INCOMPLETE'
+                    detail='Hourly precipitation requires complete nonoverlapping routine METAR intervals; traces/missing periods are not zero'
+                    if total is not None:
+                        s.cell(r,8).value=round(total,2);s.cell(r,9).value='I'
+                        audit.add(tab,r,st['id'],'rain',round(total,2),'in',b,url,interval_start=a,details=detail)
+                qc.append([tab,st['id'],st['network'],status,detail,url]);counts['iem_'+status]+=1
+            except ValueError as e:
+                qc.append([tab,st['id'],st['network'],'ERROR',str(e),URL]);counts['iem_errors']+=1
