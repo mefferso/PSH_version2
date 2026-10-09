@@ -9,7 +9,7 @@ This project is the successor to PSH_project. GitHub Actions runs the collection
 3. Supply storm name, start and end UTC dates. Download the `PSH-...` workflow artifact after the run.
 4. Inspect the `QC` tab before considering observations operational.
 
-**Current implementation is an initial foundation, not full-source operational coverage.** The collector currently supports IEM archived ASOS/AWOS wind and pressure observations for preloaded ASOS/AWOS stations. Other network adapters (CO-OPS, USGS, USACE, NDBC, WeatherSTEM, Synoptic/MesoWest and CoCoRaHS) and tornado/impact narratives are **not yet wired up**. The workflow leaves their observations untouched, instead of inventing values or silently marking them complete. A run must not be treated as a complete PSH.
+**Current implementation is an initial foundation, not full-source operational coverage.** The collector supports IEM archived ASOS/AWOS wind and pressure and NOAA CO-OPS water levels for preloaded NOS stations with validated station hyperlinks. CO-OPS elevations are explicitly requested in feet relative to MHHW and are always marked for review before issuance. Other network adapters (USGS, USACE, NDBC, WeatherSTEM, Synoptic/MesoWest and CoCoRaHS) and tornado/impact narratives are **not yet wired up**. The workflow leaves their observations untouched, instead of inventing values or silently marking them complete. A run must not be treated as a complete PSH.
 
 The shipped code:
 - uses the template station metadata and keeps WeatherFlow observations manually editable;
@@ -22,7 +22,7 @@ The shipped code:
 
 GitHub Actions is the runner. The checked-in LIX workbook is the station inventory and output template. Source adapters collect measurements by *actual observing-site identifier* and the parser records provenance and timing. QC rejects ambiguous units, nonnumeric values, and missing-time records. Generated files are workflow artifacts.
 
-**Required next stages before replacing the older PSH automation:** inventory and validate all hyperlinks; implement NOAA CO-OPS datums correctly; USGS parameter/datum checks; USACE station mappings; NDBC, WeatherSTEM and Synoptic/MesoWest adapters; daily CoCoRaHS storm totals with observation-window handling; optional verified tornado summaries; regression comparisons with Francine/Bertha; optional authenticated Google Sheets updates. In the original NWS guidance, unique station IDs and no blank rows in reported CSV data are mandatory. Do not erase existing station metadata or historical links.
+**Required next stages before replacing the older PSH automation:** inventory and validate all hyperlinks; validate CO-OPS results against a completed storm; USGS parameter/datum checks; USACE station mappings; NDBC, WeatherSTEM and Synoptic/MesoWest adapters; daily CoCoRaHS storm totals with observation-window handling; optional verified tornado summaries; regression comparisons with Francine/Bertha; optional authenticated Google Sheets updates. In the original NWS guidance, unique station IDs and no blank rows in reported CSV data are mandatory. Do not erase existing station metadata or historical links.
 
 No credential needs to be committed to the repository. If Google Sheets writeback is added, use GitHub Actions secrets and a properly authorized account rather than personal credentials in code.
 
