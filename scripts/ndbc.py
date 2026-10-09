@@ -18,7 +18,7 @@ def station_id(cell):
     url = urlparse(link or "")
     if url.hostname not in ("ndbc.noaa.gov", "www.ndbc.noaa.gov"):
         return None
-    match = re.search(r"/(?:realtime2|stdmet)/([A-Za-z0-9]{4,7})\\.(?:txt|gz)$", url.path, re.I)
+    match = re.search(r"/(?:realtime2|stdmet)/([A-Za-z0-9]{4,7})\.(?:txt|gz)$", url.path, re.I)
     value = match.group(1) if match else parse_qs(url.query).get("station", [""])[0]
     if not value:
         value = parse_qs(url.query).get("station_id", [""])[0]
