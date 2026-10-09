@@ -31,6 +31,11 @@ on:
         required: true
         default: "2026-10-09"
         type: string
+      francine_regression:
+        description: "Also collect and compare the completed Francine case (separate artifact)"
+        required: false
+        default: false
+        type: boolean
       rain_start_utc:
         description: "Optional exact rainfall start ISO UTC timestamp; set both rainfall bounds"
         required: false
@@ -87,6 +92,7 @@ jobs:
 
       - name: Build workbook and QC
         env:
+          USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
           SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
           RAIN_START_UTC: ${{ inputs.rain_start_utc || '' }}
           RAIN_END_UTC: ${{ inputs.rain_end_utc || '' }}
@@ -118,3 +124,34 @@ jobs:
       - name: Deploy dashboard
         id: deployment
         uses: actions/deploy-pages@v4
+
+  francine:
+    needs: test
+    if: github.event_name == 'workflow_dispatch' && inputs.francine_regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.lock.txt
+      - name: Collect the exact Francine reference interval
+        env:
+          SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
+          USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
+          STORM_NAME: Hurricane Francine
+          START_UTC: '2024-09-10'
+          END_UTC: '2024-09-12'
+          RAIN_START_UTC: '2024-09-10T12:00:00Z'
+          RAIN_END_UTC: '2024-09-12T12:00:00Z'
+        run: python scripts/build.py
+      - run: python scripts/validate.py
+      - name: Compare source measurements to the completed reference
+        run: python scripts/regression.py output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx
+      - name: Upload historical comparison and source audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Francine-regression-${{ github.run_number }}
+          path: output/

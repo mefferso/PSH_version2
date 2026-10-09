@@ -5,6 +5,7 @@ Stage (00065) is deliberately not converted without validated vertical datum met
 """
 import datetime as dt
 import math
+import os
 import re
 import time
 from urllib.parse import urlparse
@@ -54,9 +55,13 @@ def verify_parameter(payload, code):
         raise ValueError("Parameter metadata does not establish NAVD88 feet")
     return True
 
+def request_headers():
+    key=os.environ.get('USGS_API_KEY')
+    return {'X-Api-Key':key} if key else {}
+
 def parameter_evidence(code, session=requests):
     url="https://api.waterdata.usgs.gov/ogcapi/v1/collections/parameter-codes/items/"+code
-    r=session.get(url,params={"f":"json"},timeout=20);r.raise_for_status()
+    r=session.get(url,params={"f":"json"},timeout=20,headers=request_headers());r.raise_for_status()
     verify_parameter(r.json(),code)
     return r.url
 
@@ -68,7 +73,7 @@ def collect(site, start, end, session=requests):
             "time":f"{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z","limit":10000,"skipGeometry":"true"}
         readings=[];next_url=BASE
         for page in range(12):
-            r=session.get(next_url,params=params if page==0 else None,timeout=20)
+            r=session.get(next_url,params=params if page==0 else None,timeout=20,headers=request_headers())
             r.raise_for_status();data=r.json()
             if data.get("type")!="FeatureCollection":raise ValueError("Unexpected USGS API response")
             urls.append(r.url)
@@ -92,7 +97,7 @@ def populate(wb, qc, start, end, counts, audit=None):
     def fetch(site):
         try:return site,collect(site,start,end)
         except (requests.RequestException,ValueError) as e:return site,e
-    with ThreadPoolExecutor(max_workers=6) as pool:cache=dict(pool.map(fetch,ids))
+    with ThreadPoolExecutor(max_workers=3) as pool:cache=dict(pool.map(fetch,ids))
     evidence={}
     for code in PARAMETERS:
         try:evidence[code]=parameter_evidence(code)
@@ -145,6 +150,10 @@ def populate(wb, qc, start, end, counts, audit=None):
                        urls[0] if urls else ""])
         except Exception as exc:
             counts["usgs_errors"] += 1
-            qc.append(["Water Level",site,"USGS","ERROR",type(exc).__name__+": direct NAVD88 request unsuccessful",
+            response=getattr(exc,"response",None)
+            code=getattr(response,"status_code",None)
+            status="RATE LIMITED" if code==429 else "ERROR"
+            detail="USGS public/API-key quota exceeded; retry after reset or configure USGS_API_KEY" if code==429 else type(exc).__name__+": direct NAVD88 request unsuccessful"
+            qc.append(["Water Level",site,"USGS",status,detail,
                        "https://waterdata.usgs.gov/monitoring-location/"+usgs+"/"])
         time.sleep(0.1)

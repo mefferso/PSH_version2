@@ -1,6 +1,7 @@
 """Exact-inventory numerical comparison; missing readings are never accuracy passes."""
 import argparse
 import json
+import os
 from pathlib import Path
 from collections import defaultdict
 from openpyxl import load_workbook
@@ -40,3 +41,11 @@ if __name__=='__main__':
     p=argparse.ArgumentParser();p.add_argument('workbook');p.add_argument('--reference',default='tests/fixtures/PSHLIX_2024AL06_Francine_Data.xlsx');p.add_argument('--output',default='output/Francine-regression.json');a=p.parse_args()
     result=compare(load_workbook(a.workbook,data_only=True),load_workbook(a.reference,data_only=True))
     Path(a.output).write_text(json.dumps(result,indent=2));print(json.dumps({k:v for k,v in result.items() if k!='observations'},indent=2))
+
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        with open(os.environ['GITHUB_STEP_SUMMARY'],'a') as report:
+            report.write('### Francine source comparison — unresolved differences remain\n\n')
+            report.write(json.dumps({k:v for k,v in result.items() if k!='observations'})+'\n\n')
+            report.write('Missing readings do not count as agreement. A successful job validates consistency, not complete accuracy. Full per-station comparison is in the artifact.\n\n')
+            for x in result['observations']:
+                if x['status'] in ('DISCREPANCY','DATUM MISMATCH'):report.write(f"- {x['site_id']} {x['variable']}: source {x['generated']}, reference {x['reference']} ({x['status']})\n")

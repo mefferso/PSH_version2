@@ -61,3 +61,14 @@ class ParameterMetadataTests(unittest.TestCase):
         from usgs import verify_parameter
         self.assertTrue(verify_parameter({'id':'62620','properties':{'id':'62620','parameter_description':'Estuary or ocean water surface elevation above NAVD 1988, feet','unit_of_measure':'ft'}},'62620'))
         with self.assertRaises(ValueError):verify_parameter({'id':'62020','properties':{'id':'62020','parameter_description':'Albuterol, water, filtered','unit_of_measure':'ug/l'}},'62020')
+
+class CredentialHeaderTests(unittest.TestCase):
+    def test_optional_api_key_uses_header_not_provenance_url(self):
+        import os,usgs
+        from unittest.mock import patch
+        response=Mock();response.url='https://api.waterdata.usgs.gov/ogcapi/v1/collections/parameter-codes/items/63160?f=json'
+        response.json.return_value={'properties':{'id':'63160','unit_of_measure':'ft','parameter_description':'Water surface elevation above NAVD 1988, feet'}}
+        session=Mock();session.get.return_value=response
+        with patch.dict(os.environ,{'USGS_API_KEY':'fixture-key'}):url=usgs.parameter_evidence('63160',session)
+        self.assertEqual(session.get.call_args.kwargs.get('headers',{}).get('X-Api-Key'),'fixture-key')
+        self.assertNotIn('fixture-key',url)
