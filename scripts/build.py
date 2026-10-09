@@ -17,6 +17,7 @@ from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 from coops import populate as populate_coops
 from ndbc import populate as populate_ndbc
+from usgs import populate as populate_usgs
 from openpyxl.styles import Font, PatternFill
 
 TEMPLATE = pathlib.Path("Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx")
@@ -183,6 +184,7 @@ def build():
         time.sleep(0.15)
     populate_coops(wb, qc, start, end, totals)
     populate_ndbc(wb, qc, start, end, totals)
+    populate_usgs(wb, qc, start, end, totals)
     # The original 2025 template's Summary uses Google QUERY formulas, which cannot
     # recalculate in Excel. Do not claim the Summary top-10 blocks are populated.
     qc.append(["Summary", "", "", "REVIEW REQUIRED",
@@ -201,9 +203,9 @@ def build():
     target = OUT / f"PSHLIX_{start.year}_{slug}_PARTIAL.xlsx"
     wb.save(target)
     report = {"storm": name, "start_utc": str(start), "end_utc": str(end),
-              "coverage": "PARTIAL ASOS/AWOS CO-OPS NDBC", "counts": dict(totals),
+              "coverage": "PARTIAL ASOS/AWOS CO-OPS NDBC USGS", "counts": dict(totals),
               "manual_networks": ["WeatherFlow"], "not_yet_automated": [
-                  "USGS", "USACE", "Synoptic", "WeatherSTEM",
+                  "USACE", "Synoptic", "WeatherSTEM",
                   "CoCoRaHS", "Tornadoes", "Inland Flooding", "Impacts", "Summary top 10"]}
     (OUT / "QC.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
