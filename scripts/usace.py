@@ -6,6 +6,7 @@ confirmed NAVD88 adjustment and archived water level series.
 import html
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html.parser import HTMLParser
 from urllib.parse import urlparse, parse_qs
 import requests
@@ -65,7 +66,7 @@ def metadata_from_html(source):
 
 def fetch_station_metadata(sid, session=requests):
     url = f"https://{HOST}/WaterControl/stationinfo2.cfm"
-    response = session.get(url, params={"sid":sid}, timeout=18,
+    response = session.get(url, params={"sid":sid}, timeout=7,
                            headers={"User-Agent":"LIX-PSH-V2/0.5 (metadata audit)"})
     response.raise_for_status()
     if len(response.content) > 1_000_000:
@@ -74,7 +75,24 @@ def fetch_station_metadata(sid, session=requests):
 
 def populate(workbook, qc, start, end, counts):
     sheet = workbook["Water Level"]
+    station_ids = {}
+    for row_num in range(2, sheet.max_row + 1):
+        name = str(sheet.cell(row_num, 1).value or "").strip()
+        ref = station_link(sheet.cell(row_num, 1))
+        network = str(sheet.cell(row_num, 13).value or "").strip().upper()
+        if name and ref and network in SOURCES:
+            station_ids[ref[0]] = ref[1]
     cache = {}
+    with ThreadPoolExecutor(max_workers=8) as pool:
+        futures = {pool.submit(fetch_station_metadata, ident): ident for ident in station_ids}
+        for future in as_completed(futures):
+            ident = futures[future]
+            try:
+                cache[ident] = future.result()
+                counts["rivergages_metadata_retrieved"] += 1
+            except (requests.RequestException, ValueError) as exc:
+                cache[ident] = (None, station_ids[ident])
+                counts["rivergages_metadata_errors"] += 1
     for row in range(2, sheet.max_row + 1):
         site = str(sheet.cell(row, 1).value or "").strip()
         network = str(sheet.cell(row, 13).value or "").strip().upper()
@@ -88,14 +106,7 @@ def populate(workbook, qc, start, end, counts):
                        "RiverGages linked station "+sid+" but source network not USACE/LA CPRA", link])
             continue
         counts["rivergages_datum_pending"] += 1
-        if sid not in cache:
-            try:
-                cache[sid] = fetch_station_metadata(sid)
-                counts["rivergages_metadata_retrieved"] += 1
-            except (requests.RequestException, ValueError) as exc:
-                cache[sid] = (None, link)
-                counts["rivergages_metadata_errors"] += 1
-        meta, url = cache[sid]
+        meta, url = cache.get(sid, (None, link))
         if meta is None:
             description = f"RiverGages station {sid}: metadata page unavailable. Datum unverified; no measurement inserted."
             status = "METADATA UNAVAILABLE"
@@ -108,4 +119,3 @@ def populate(workbook, qc, start, end, counts):
             if meta["has_navd88_reference"]:
                 counts["rivergages_navd88_mentioned"] += 1
         qc.append(["Water Level", site, network, status, description[:600], url])
-        time.sleep(.03)
