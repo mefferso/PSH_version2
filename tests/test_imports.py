@@ -41,3 +41,21 @@ class ImportTests(unittest.TestCase):
         reading['interval_start_utc']='2024-09-11T00:00:00Z'
         imports.apply(self.w,[reading],self.start,self.end,self.audit)
         self.assertEqual(self.w['Rainfall'].cell(98,8).value,4.2)
+
+class OverrideTests(ImportTests):
+    def test_reviewed_override_removes_stale_direction_and_replaces_audit(self):
+        self.w['Wind and Pressure'].cell(91,18).value=90
+        imports.apply(self.w,[self.reading()],self.start,self.end,self.audit)
+        imports.apply(self.w,[self.reading(value=55)],self.start,self.end,self.audit)
+        self.assertIsNone(self.w['Wind and Pressure'].cell(91,18).value)
+        self.assertEqual(len(self.audit.entries),1)
+        self.assertEqual(self.audit.entries[0]['value'],55)
+
+class CustomRainWindowTests(ImportTests):
+    def test_reviewed_rain_uses_custom_noon_interval(self):
+        import os
+        from unittest.mock import patch
+        reading=self.reading(tab='Rainfall',row=98,site_id='LA-AS-02',network='CoCoRaHS',variable='rain',value=5,unit='in',time_utc='2024-09-12T12:00:00Z',interval_start_utc='2024-09-11T12:00:00Z')
+        with patch.dict(os.environ,{'RAIN_START_UTC':'2024-09-11T12:00:00Z','RAIN_END_UTC':'2024-09-12T12:00:00Z'}):
+            imports.apply(self.w,[reading],self.start,self.end,self.audit)
+        self.assertEqual(self.audit.entries[0]['interval_start_utc'],'2024-09-11T12:00:00+00:00')

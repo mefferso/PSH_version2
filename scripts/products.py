@@ -5,10 +5,15 @@ from pathlib import Path
 from openpyxl.cell.cell import MergedCell
 from common import inventory,finite
 
+CSV_FILES=['Wind_and_Pressure_REVIEW.csv','Rainfall_REVIEW.csv','Water_Level_REVIEW.csv','WindandPressure_CANDIDATE.csv','Rainfall_CANDIDATE.csv','WaterLevel_CANDIDATE.csv','Tornadoes_CANDIDATE.csv']
+
 BLOCKS=[(20,'Wind and Pressure',11,True,'L'),(34,'Wind and Pressure',17,True,'L'),
         (48,'Wind and Pressure',11,True,'M'),(62,'Wind and Pressure',17,True,'M'),
         (76,'Rainfall',8,True,None),(89,'Water Level',7,True,'NOS'),
         (102,'Wind and Pressure',23,False,None)]
+
+def csv_values(values):
+    return [int(v) if isinstance(v,float) and v.is_integer() else v for v in values]
 
 def summaries(wb):
     target=wb['Summary']
@@ -55,5 +60,27 @@ def export_csv(wb,directory):
                     continue
                 if not any(finite(s.cell(r,c).value) is not None for c in measurements):continue
                 values=[s.cell(r,c).value for c in range(1,cols+1)];values[0]=station['id']
-                writer.writerow(values)
+                writer.writerow(csv_values(values))
+    # NWSI 10-601 (2026-08-17), section 8: gust >33 kn, MSLP <1005 mb,
+    # rain >=3 inches. These candidate files still require meteorologist review.
+    for tab,filename,cols in (("Wind and Pressure","WindandPressure",29),("Rainfall","Rainfall",9),("Water Level","WaterLevel",14)):
+        source=wb[tab];stations=list(inventory(wb,tab));ids=Counter(st["id"] for st in stations)
+        with (directory/(filename+"_CANDIDATE.csv")).open("w",newline="",encoding="utf-8") as stream:
+            writer=csv.writer(stream);writer.writerow([source.cell(1,c).value for c in range(1,cols+1)])
+            for st in stations:
+                if ids[st["id"]]>1 or not st["network"]:continue
+                r=st["row"]
+                gust=finite(source.cell(r,17).value) if tab=="Wind and Pressure" else None
+                pressure=finite(source.cell(r,23).value) if tab=="Wind and Pressure" else None
+                rain=finite(source.cell(r,8).value) if tab=="Rainfall" else None
+                water=finite(source.cell(r,7).value) if tab=="Water Level" else None
+                eligible=((gust is not None and gust>33) or (pressure is not None and pressure<1005)) if tab=="Wind and Pressure" else rain is not None and rain>=3 if tab=="Rainfall" else water is not None
+                if not eligible:continue
+                values=[source.cell(r,c).value for c in range(1,cols+1)];values[0]=st["id"];writer.writerow(csv_values(values))
+    tornado=wb["Tornadoes"]
+    with (directory/"Tornadoes_CANDIDATE.csv").open("w",newline="",encoding="utf-8") as stream:
+        writer=csv.writer(stream);writer.writerow([tornado.cell(1,c).value for c in range(1,12)])
+        for r in range(2,tornado.max_row+1):
+            if finite(tornado.cell(r,2).value,-90,90) is not None and finite(tornado.cell(r,3).value,-180,180) is not None:
+                writer.writerow(csv_values([tornado.cell(r,c).value for c in range(1,12)]))
     return issues

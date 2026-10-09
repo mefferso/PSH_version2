@@ -59,3 +59,22 @@ class ProductTests(unittest.TestCase):
         self.assertIsNone(common.interval_total([(a,b,None)],a,b))
 
 if __name__=='__main__':unittest.main()
+
+class ReportingThresholdTests(unittest.TestCase):
+    def test_current_nws_thresholds_without_dropping_review_readings(self):
+        w=load_workbook(TEMPLATE)
+        for st in common.inventory(w,'Wind and Pressure'):
+            for c in (11,17,23):w['Wind and Pressure'].cell(st['row'],c).value=None
+        w['Wind and Pressure'].cell(2,17).value=33
+        w['Wind and Pressure'].cell(3,17).value=33.1
+        w['Wind and Pressure'].cell(4,23).value=1004.9
+        w['Wind and Pressure'].cell(5,23).value=1005
+        w['Rainfall'].cell(2,8).value=3
+        w['Rainfall'].cell(3,8).value=2.99
+        with tempfile.TemporaryDirectory() as d:
+            products.export_csv(w,Path(d))
+            with open(Path(d)/'WindandPressure_CANDIDATE.csv',newline='') as f:rows=list(csv.reader(f))
+            self.assertEqual({x[0] for x in rows[1:]},{'KMSY','KNEW'})
+            self.assertEqual(len(rows[0]),29)
+            with open(Path(d)/'Rainfall_CANDIDATE.csv',newline='') as f:rows=list(csv.reader(f))
+            self.assertEqual({x[0] for x in rows[1:]},{'BTR'})

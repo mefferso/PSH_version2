@@ -11,7 +11,7 @@ h1{margin:0 0 5px;font-size:25px}header p{margin:0;color:#afc2d9}.shell{padding:
 .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:20px 0 12px}
 button,a.btn{background:#1b304d;border:1px solid #3e5878;color:#f4f8ff;border-radius:8px;padding:9px 13px;cursor:pointer;font:inherit;text-decoration:none}
 button.active{background:#2969b5;border-color:#88aee0}button:hover,a.btn:hover{background:#31547d}
-input{padding:10px 13px;background:#0e1929;border:1px solid #445875;color:white;border-radius:8px;min-width:220px}
+select{padding:9px;background:#0e1929;color:white;border:1px solid #445875;border-radius:8px}dialog{max-width:650px;background:#142339;color:#e8edf7;border:1px solid #445875;border-radius:10px}dialog::backdrop{background:#000a}dialog label{display:block;margin:12px 0}dialog input,dialog select{margin-left:8px}dialog input[type=checkbox]{min-width:0}input{padding:10px 13px;background:#0e1929;border:1px solid #445875;color:white;border-radius:8px;min-width:220px}
 .tablewrap{max-height:65vh;overflow:auto;border:1px solid #30435f;border-radius:10px}
 table{border-collapse:separate;border-spacing:0;width:100%;font-size:13px;white-space:nowrap}
 th,td{padding:9px 12px;border-bottom:1px solid #253a53;text-align:left;max-width:380px;overflow:hidden;text-overflow:ellipsis}
@@ -21,10 +21,20 @@ td a{color:#8ccaff;text-decoration:underline} .note{margin:12px 0;color:#afc2d9}
 </style></head>
 <body><header><h1>🌀 PSH Version 2 <span class="muted">/ LIX</span></h1><p>Automated observation review · GitHub Pages</p></header>
 <main class="shell"><div id="title">Loading latest run…</div><div class="stats" id="stats"></div>
-<div class="warning"><b>Development / incomplete data.</b> Archived ASOS/AWOS wind/pressure and NOAA CO-OPS MHHW water-level collection are implemented. CO-OPS observations require review; other networks and summary formulas remain incomplete. WeatherFlow remains manual. Do not use this preview as an operational PSH.</div>
-<div class="controls"><div id="tabs" style="display:flex;gap:7px;flex-wrap:wrap"></div><input aria-label="Filter displayed rows" id="search" placeholder="Filter stations / values…" /><a class="btn" id="download" href="#">Download current XLSX</a></div>
+<div class="warning"><b>Development review product.</b> Every measurement has source provenance. Missing or unsupported observations remain blank. Review coverage, station exposure, timestamps and datum evidence in QC before use. WeatherFlow remains manual. The storm label alone does not establish cyclone attribution. Outputs are not official PSH products.</div>
+<div class="controls"><div id="tabs" style="display:flex;gap:7px;flex-wrap:wrap"></div><input aria-label="Filter displayed rows" id="search" placeholder="Filter stations / values…" /><select id="qcfilter" aria-label="QC status filter"><option value="">All QC statuses</option></select><a class="btn" id="download" href="#">Download XLSX</a><a class="btn" href="review-outputs.zip">Download CSVs + audit</a><button id="manualbutton">Add WeatherFlow observations</button></div>
 <p class="note" id="message"></p><div class="tablewrap"><table><thead id="heads"></thead><tbody id="rows"></tbody></table></div>
-<p class="note">Source links appear on linked station IDs. Values are not independently verified; consult the QC tab before using them.</p></main>
+<p class="note">Source links appear on station IDs and in Provenance. Review CSVs retain all collected readings; candidate CSVs apply current NWS thresholds and still require review. <a id="runlink" hidden>View source workflow</a></p>
+<dialog id="manual"><form id="manualform"><h2>WeatherFlow manual observations</h2><p>Enter a reviewed measurement from the exact station. UTC dates must fall within this run. Entries stay in this browser until downloaded; this form does not update the published workbook.</p>
+<label>Station <select id="manualstation" required></select></label>
+<label>Variable <select id="manualvariable"><option value="gust">Peak gust (knots)</option><option value="wind">Peak sustained wind (knots)</option><option value="pressure">Minimum sea-level pressure (hPa)</option></select></label>
+<label>Value <input id="manualvalue" type="number" min="0" max="200" step="0.1" required></label>
+<label>Observation time (UTC) <input id="manualtime" type="datetime-local" step="60" required></label>
+<label>Direction (degrees, optional) <input id="manualdirection" type="number" min="0" max="360" step="1"></label>
+<label>Source URL <input id="manualsource" type="url" required></label>
+<label><input id="manualreview" type="checkbox" required> I reviewed this station, value, units and UTC time.</label>
+<p id="manualstatus" role="status"></p><button type="submit">Stage observation</button><button id="manualdownload" type="button">Download staged JSON</button><button id="manualclose" type="button">Close</button>
+</form></dialog></main>
 <script>
 let payload,active;
 const $=id=>document.getElementById(id);
@@ -35,7 +45,8 @@ function render(){
  $('tabs').innerHTML=Object.keys(payload.tabs).map(n=>'<button class="'+(n===active?'active':'')+'" data-tab="'+esc(n)+'">'+esc(n)+'</button>').join('');
  document.querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{active=b.dataset.tab;render()});
  $('message').textContent=tab.notice||((tab.rows||[]).length+' rows available · '+tab.status);
- const rows=(tab.rows||[]).filter(r=>r.v.some(x=>str(x).toLowerCase().includes(term)));
+ const rows=(tab.rows||[]).filter(r=>r.v.some(x=>str(x).toLowerCase().includes(term)) && (active!=='QC'||!$('qcfilter').value||r.v[3]===$('qcfilter').value));
+ $('qcfilter').hidden=active!=='QC';
  // Suppress entirely empty columns; keep alignment and original order.
  const present=tab.headers.map((_,i)=>i).filter(i=>tab.headers[i]!==null&&tab.headers[i]!==''||rows.some(r=>r.v[i]!==null&&r.v[i]!==''));
  $('heads').innerHTML='<tr>'+present.map(i=>'<th>'+esc(tab.headers[i]||('Column '+(i+1)))+'</th>').join('')+'</tr>';
@@ -45,7 +56,32 @@ function render(){
 fetch('data/latest.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error('Latest-run data not yet published');return r.json()}).then(p=>{
  payload=p;active=p.tabs['Wind and Pressure']?'Wind and Pressure':Object.keys(p.tabs)[0];
  $('title').innerHTML='<h2>'+esc(p.meta.storm)+'</h2><span class="muted">'+esc(p.meta.start_utc)+' through '+esc(p.meta.end_utc)+' · '+esc(p.meta.coverage)+'</span>';
- const c=p.meta.counts||{};$('stats').innerHTML=[['Collected',c.COLLECTED||0],['Partial',c.PARTIAL||0],['No Data',c['NO DATA']||0],['Other networks pending',c.other_network_pending||0],['WeatherFlow manual',c.weatherflow_manual||0]].map(([k,v])=>'<div class="stat"><span class="muted">'+esc(k)+'</span><strong>'+esc(v)+'</strong></div>').join('');
- $('download').href=encodeURIComponent(p.download);$('search').oninput=render;render();
+ const c=p.meta.qc_status_counts||{};$('stats').innerHTML=[['Audited measurements',p.meta.measurement_count||0],['Review required',c['REVIEW REQUIRED']||0],['Source errors',c.ERROR||0],['Unsupported',c.UNSUPPORTED||0],['WeatherFlow manual',c.MANUAL||0]].map(([k,v])=>'<div class="stat"><span class="muted">'+esc(k)+'</span><strong>'+esc(v)+'</strong></div>').join('');
+ $('download').href=encodeURIComponent(p.download);$('search').oninput=render;
+ // Set options with DOM nodes to avoid interpreting source values as markup.
+ Object.keys(c).forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;$('qcfilter').append(o)});
+ $('qcfilter').onchange=render;
+ if(p.meta.workflow_url&&/^https:\/\/github\.com\//.test(p.meta.workflow_url)){$('runlink').hidden=false;$('runlink').href=p.meta.workflow_url}
+ setupManual();render();
 }).catch(e=>{$('title').innerHTML='<p class="error">'+esc(e.message)+'</p><p>Run the Build PSH workbook workflow to publish the first dataset.</p>'});
+
+let staged=[];
+function setupManual(){
+ const stations=(payload.tabs['Wind and Pressure'].rows||[]).filter(r=>str(r.v[7]).toUpperCase()==='WEATHERFLOW');
+ stations.forEach(r=>{const o=document.createElement('option');o.value=r.row;o.textContent=str(r.v[0])+' — '+str(r.v[1]);$('manualstation').append(o)});
+ function station(){return stations.find(r=>r.row===Number($('manualstation').value))}
+ function source(){const r=station();$('manualsource').value=r?.links['0']||''}
+ $('manualstation').onchange=source;source();
+ $('manualbutton').onclick=()=>$('manual').showModal();$('manualclose').onclick=()=>$('manual').close();
+ $('manualvariable').onchange=()=>{const pressure=$('manualvariable').value==='pressure';$('manualvalue').min=pressure?850:0;$('manualvalue').max=pressure?1100:$('manualvariable').value==='wind'?180:200;$('manualdirection').disabled=pressure};
+ $('manualform').onsubmit=e=>{
+  e.preventDefault();const r=station(),field=$('manualvariable').value,t=$('manualtime').value+':00Z',date=new Date(t);
+  if(!r||Number.isNaN(date.valueOf())||date<new Date(payload.meta.start_utc+'T00:00:00Z')||date>=new Date(payload.meta.end_utc+'T00:00:00Z').getTime()+86400000){$('manualstatus').textContent='Choose an observation time within the requested UTC dates.';return}
+  const item={tab:'Wind and Pressure',row:r.row,site_id:str(r.v[0]),network:'WeatherFlow',variable:field,value:Number($('manualvalue').value),unit:field==='pressure'?'hPa':'kn',time_utc:date.toISOString(),source_url:$('manualsource').value,reviewed:true};
+  if(field!=='pressure'&&$('manualdirection').value!=='')item.direction=Number($('manualdirection').value);
+  staged=staged.filter(x=>x.row!==item.row||x.variable!==item.variable);staged.push(item);
+  $('manualstatus').textContent=staged.length+' reviewed observations staged. Download JSON and follow the README import instructions.';
+ };
+ $('manualdownload').onclick=()=>{if(!staged.length)return;const u=URL.createObjectURL(new Blob([JSON.stringify(staged,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=u;a.download='WeatherFlow-reviewed.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000)};
+}
 </script></body></html>

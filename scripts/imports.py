@@ -9,6 +9,8 @@ UNITS={'wind':('kn',0,180),'gust':('kn',0,200),'pressure':('hPa',850,1100),'rain
 def apply(wb,readings,start,end,audit):
     inventory_map={(tab,s['row']):s for tab in ('Wind and Pressure','Rainfall','Water Level') for s in inventory(wb,tab)}
     a,b=bounds(start,end);checked=[];seen=set()
+    from cocorahs import rain_bounds
+    rain_a,rain_b=rain_bounds(start,end)
     for x in readings:
         tab=x.get('tab');r=x.get('row');st=inventory_map.get((tab,r));field=x.get('variable')
         if not st or st['id']!=x.get('site_id') or st['network']!=x.get('network'):raise ValueError('Import inventory identity mismatch')
@@ -19,7 +21,7 @@ def apply(wb,readings,start,end,audit):
         if tab=='Wind and Pressure' and field not in ('wind','gust','pressure'):raise ValueError('Wrong variable for tab')
         if tab=='Rainfall' and field!='rain' or tab=='Water Level' and field!='water':raise ValueError('Wrong variable for tab')
         if field=='rain':
-            if timestamp(x.get('interval_start_utc'))!=a or t!=b:raise ValueError('Rainfall does not cover full requested UTC window')
+            if timestamp(x.get('interval_start_utc'))!=rain_a or t!=rain_b:raise ValueError('Rainfall does not cover full requested UTC window')
         elif not a<=t<b:raise ValueError('Observation outside requested UTC window')
         url=public_url(x.get('source_url',''))
         if field=='water':
@@ -36,7 +38,9 @@ def apply(wb,readings,start,end,audit):
         tab=x['tab'];r=st['row'];field=x['variable'];s=wb[tab]
         if field in ('wind','gust','pressure'):
             col={'wind':11,'gust':17,'pressure':23}[field];s.cell(r,col).value=round(v,1)
-            if field!='pressure' and finite(x.get('direction'),0,360) is not None:s.cell(r,col+1).value=round(float(x['direction']))
+            if field!='pressure':
+                direction=finite(x.get('direction'),0,360)
+                s.cell(r,col+1).value=round(direction) if direction is not None else None
             offset=col+1 if field=='pressure' else col+2
             for n,part in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):s.cell(r,offset+n).value=part
             s.cell(r,28).value='I';s.cell(r,29).value='A';s.cell(r,30).value='Reviewed source import; see provenance'
@@ -45,10 +49,13 @@ def apply(wb,readings,start,end,audit):
             s.cell(r,7).value=round(v,2);s.cell(r,8).value=x['datum']
             for n,part in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):s.cell(r,9+n).value=part
             s.cell(r,14).value='I'
-        audit.add(tab,r,st['id'],field,s.cell(r,{'wind':11,'gust':17,'pressure':23,'rain':8,'water':7}[field]).value,
+        previous=[e for e in audit.entries if (e['tab'],e['row'],e['variable'])==(tab,r,field)]
+        audit.entries[:]=[e for e in audit.entries if (e['tab'],e['row'],e['variable'])!=(tab,r,field)]
+        entry=audit.add(tab,r,st['id'],field,s.cell(r,{'wind':11,'gust':17,'pressure':23,'rain':8,'water':7}[field]).value,
                   x['unit'],t,url,datum=x.get('datum'),evidence=x.get('datum_evidence'),raw_value=v,
                   interval_start=timestamp(x.get('interval_start_utc')),status='REVIEWED IMPORT',
                   details='Human-reviewed import; datum citations are reviewer attestations, not an automatic conversion')
+        if previous:entry['superseded_observations']=previous
 
 def load(wb,path,start,end,audit):apply(wb,json.loads(Path(path).read_text()),start,end,audit)
 

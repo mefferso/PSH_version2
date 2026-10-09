@@ -6,8 +6,14 @@ on:
       - 'scripts/**'
       - 'tests/**'
       - 'site/**'
+      - 'reviewed/**'
+      - 'package*.json'
       - 'requirements.txt'
+      - 'requirements.lock.txt'
+      - 'Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx'
       - '.github/workflows/build-psh.yml'
+  pull_request:
+    paths: ["scripts/**", "tests/**", "requirements*.txt", "package*.json", "site/**", ".github/workflows/build-psh.yml"]
   workflow_dispatch:
     inputs:
       storm_name:
@@ -25,6 +31,22 @@ on:
         required: true
         default: "2026-10-09"
         type: string
+      rain_start_utc:
+        description: "Optional exact rainfall start ISO UTC timestamp; set both rainfall bounds"
+        required: false
+        type: string
+      rain_end_utc:
+        description: "Optional exact rainfall end ISO UTC timestamp"
+        required: false
+        type: string
+      reviewed_import:
+        description: "Optional committed reviewed JSON path (e.g. reviewed/weatherflow.json)"
+        required: false
+        type: string
+      datum_registry:
+        description: "Optional committed independently reviewed datum registry JSON path"
+        required: false
+        type: string
 permissions:
   contents: read
   pages: write
@@ -33,7 +55,23 @@ concurrency:
   group: psh-pages
   cancel-in-progress: true
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: pip install -r requirements.lock.txt
+      - run: python -m unittest discover -s tests -v
   collect:
+    needs: test
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -45,17 +83,25 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install dependencies
-        run: pip install -r requirements.txt
-      - name: Test collector adapters
-        run: python -m unittest discover -s tests -v
+        run: pip install -r requirements.lock.txt
+
       - name: Build workbook and QC
         env:
+          SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
+          RAIN_START_UTC: ${{ inputs.rain_start_utc || '' }}
+          RAIN_END_UTC: ${{ inputs.rain_end_utc || '' }}
+          PSH_IMPORT_FILE: ${{ inputs.reviewed_import || '' }}
+          PSH_DATUM_REGISTRY: ${{ inputs.datum_registry || '' }}
           STORM_NAME: ${{ inputs.storm_name || 'Hurricane Isaias' }}
           START_UTC: ${{ inputs.start_utc || '2026-10-08' }}
           END_UTC: ${{ inputs.end_utc || '2026-10-09' }}
         run: python scripts/build.py
+      - name: Validate workbook preservation and observation provenance
+        run: python scripts/validate.py
       - name: Export dashboard data
         run: python scripts/export_dashboard.py
+      - name: Validate published tabs and downloads
+        run: python scripts/validate.py --site
       - name: Upload workbook and audit
         if: always()
         uses: actions/upload-artifact@v4

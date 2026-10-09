@@ -63,7 +63,9 @@ def write_wind(sheet,r,rows,site,audit,default_url,details):
         offset=col+2 if dircol else col+1
         for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):sheet.cell(r,offset+n).value=v
         audit.add('Wind and Pressure',r,site,field,round(value,1),'hPa' if field=='pressure' else 'kn',t,
-                  sample.get('url') or default_url,raw_value=value,status='REVIEW REQUIRED',details=details)
+                  sample.get('url') or default_url,raw_value=sample.get(field+'_original_value',value),
+                  raw_unit=sample.get(field+'_original_unit'),status='REVIEW REQUIRED',details=details)
+        if sample.get('retrieval'):audit.entries[-1]['retrieval']=sample['retrieval']
         written+=1
     sheet.cell(r,28).value='I';sheet.cell(r,29).value='A'
     sheet.cell(r,30).value=details+'; sampling/coverage and station exposure require review'
@@ -89,7 +91,8 @@ def populate(wb,qc,start,end,counts,audit):
                     n=write_wind(s,r,rows,st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
                     status='REVIEW REQUIRED' if n else 'NO DATA';detail=f'{len(rows)} samples; {n}/3 variables; UTC window'
                 else:
-                    a,b=bounds(start,end);total=rain_total(rows,a,b)
+                    from cocorahs import rain_bounds
+                    a,b=rain_bounds(start,end);total=rain_total(rows,a,b)
                     status='REVIEW REQUIRED' if total is not None else 'INCOMPLETE'
                     detail='Hourly precipitation requires complete nonoverlapping routine METAR intervals; traces/missing periods are not zero'
                     if total is not None:

@@ -38,3 +38,14 @@ class NDBCSafetyTests(unittest.TestCase):
     def test_wrong_units_are_not_interpreted_as_metres_per_second(self):
         sample='#YY MM DD hh mm WDIR WSPD GST PRES\n#yr mo dy hr mn degT mph mph hPa\n2024 09 11 12 00 90 50 60 990\n'
         with self.assertRaises(ValueError):parse_text(sample,dt.date(2024,9,11),dt.date(2024,9,11))
+
+class FeedConflictTests(unittest.TestCase):
+    def test_conflicting_realtime_archive_timestamp_is_withheld(self):
+        import ndbc
+        from unittest.mock import patch
+        session=Mock();response=Mock(status_code=200,content=b'x',text='unused',url='https://www.ndbc.noaa.gov/data/realtime2/BURL1.txt');session.get.return_value=response
+        t=dt.datetime.now(dt.timezone.utc).replace(hour=12,minute=0,second=0,microsecond=0)
+        first={'time':t,'wind':10,'gust':20,'pressure':990,'dir':90};second=dict(first,gust=40)
+        with patch.object(ndbc,'parse_text',side_effect=[[first],[second]]):
+            rows,urls,errors=ndbc.retrieve('BURL1',t.date(),t.date(),session)
+        self.assertEqual(rows,[]);self.assertTrue(any('Conflicting feeds' in x for x in errors))

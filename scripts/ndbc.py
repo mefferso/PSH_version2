@@ -100,7 +100,14 @@ def retrieve(station, start, end, session=requests):
                 samples.append(sample)
         except (requests.RequestException, ValueError, OSError, UnicodeError) as exc:
             errors.append(f"{url}: {type(exc).__name__}")
-    dedup = {s["time"]:s for s in samples}
+    dedup={};conflicts=set()
+    for sample in samples:
+        t=sample['time']
+        if t in dedup and any(dedup[t].get(k)!=sample.get(k) for k in ('wind','gust','pressure','dir')):
+            conflicts.add(t)
+        else:dedup[t]=sample
+    for t in conflicts:
+        dedup.pop(t,None);errors.append('Conflicting feeds at '+t.isoformat()+'; observation withheld')
     return sorted(dedup.values(), key=lambda x:x["time"]), urls, errors
 
 def setpeak(sheet, r, col, peak, dircol=None):

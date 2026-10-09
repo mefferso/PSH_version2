@@ -7,3 +7,6 @@ site/*.xlsx
 site/*.csv
 site/*.zip
 site/.nojekyll
+
+node_modules/
+site/WeatherFlow-import-template.json

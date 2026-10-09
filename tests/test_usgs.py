@@ -16,21 +16,21 @@ class USGSTests(unittest.TestCase):
     def test_direct_navd88_only(self):
         payload={"features":[{"properties":{"monitoring_location_id":"USGS-07374527","parameter_code":code,
             "unit_of_measure":"ft","value":val,"time":"2026-10-09T07:15:00Z"}} for code,val in
-            (("00065","12.5"),("62620","3.25"),("62615","4.1"))]}
+            (("00065","12.5"),("63160","3.25"),("62615","4.1"))]}
         rows=parse_observations(payload,"07374527",dt.date(2026,10,8),dt.date(2026,10,9))
         self.assertEqual(len(rows),2)
         self.assertEqual(max(v[0] for v in rows),4.1)
     def test_rejects_unknown_unit_and_other_station(self):
-        payload={"features":[{"properties":{"monitoring_location_id":"USGS-00000001","parameter_code":"62620",
+        payload={"features":[{"properties":{"monitoring_location_id":"USGS-00000001","parameter_code":"63160",
             "unit_of_measure":"ft","value":"9","time":"2026-10-09T02:00:00Z"}},
-            {"properties":{"monitoring_location_id":"USGS-07374527","parameter_code":"62620",
+            {"properties":{"monitoring_location_id":"USGS-07374527","parameter_code":"63160",
             "unit_of_measure":"m","value":"8","time":"2026-10-09T02:00:00Z"}}]}
         self.assertEqual(parse_observations(payload,"07374527",dt.date(2026,10,8),dt.date(2026,10,9)),[])
     def test_data_response(self):
         response=Mock()
         response.url="https://api.waterdata.usgs.gov/ogcapi/v1/collections/continuous/items"
         response.json.return_value={"type":"FeatureCollection","features":[{"properties":{
-            "monitoring_location_id":"USGS-07374527","parameter_code":"62620",
+            "monitoring_location_id":"USGS-07374527","parameter_code":"63160",
             "unit_of_measure":"ft","value":"2.2","time":"2026-10-09T02:00:00Z"}}],"links":[]}
         session=Mock()
         session.get.return_value=response
@@ -45,6 +45,19 @@ class USGSSafetyTests(unittest.TestCase):
         response=Mock();response.url='https://api.waterdata.usgs.gov/ogcapi/v1/collections/continuous/items'
         response.json.return_value={'type':'FeatureCollection','features':[{'properties':{
             'monitoring_location_id':'USGS-07374527','parameter_code':code,'time_series_id':code,
-            'unit_of_measure':'ft','value':'3','time':'2024-09-11T12:00:00Z'}} for code in ('62620','62615')], 'links':[]}
+            'unit_of_measure':'ft','value':'3','time':'2024-09-11T12:00:00Z'}} for code in ('63160','62615')], 'links':[]}
         session=Mock();session.get.return_value=response
         with self.assertRaises(ValueError):collect('07374527',dt.date(2024,9,11),dt.date(2024,9,11),session)
+
+class USGSParameterRegressionTests(unittest.TestCase):
+    def test_authoritative_63160_and_62620_navd88_eligible(self):
+        payload={'features':[{'properties':{'monitoring_location_id':'USGS-07374527','parameter_code':code,
+            'unit_of_measure':'ft','value':'3.1','time':'2024-09-11T12:00:00Z'}} for code in ('63160','62620')]}
+        rows=parse_observations(payload,'07374527',dt.date(2024,9,11),dt.date(2024,9,11))
+        self.assertEqual([x[2]['parameter_code'] for x in rows],['63160','62620'])
+
+class ParameterMetadataTests(unittest.TestCase):
+    def test_official_parameter_datum_and_unit_gate(self):
+        from usgs import verify_parameter
+        self.assertTrue(verify_parameter({'id':'62620','properties':{'id':'62620','parameter_description':'Estuary or ocean water surface elevation above NAVD 1988, feet','unit_of_measure':'ft'}},'62620'))
+        with self.assertRaises(ValueError):verify_parameter({'id':'62020','properties':{'id':'62020','parameter_description':'Albuterol, water, filtered','unit_of_measure':'ug/l'}},'62020')

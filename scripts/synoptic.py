@@ -26,6 +26,7 @@ def parse(payload,station,start,end):
             for name,key,lo,hi in [('wind_speed','wind',0,180),('wind_gust','gust',0,200),('sea_level_pressure','pressure',850,1100)]:
                 values=series(name);factor=FACTORS[name].get(units.get(name));v=finite(values[n]) if n<len(values) else None
                 row[key]=finite(v*factor,lo,hi) if v is not None and factor is not None else None
+                row[key+'_original_value']=v;row[key+'_original_unit']=units.get(name)
             directions=series('wind_direction')
             row['dir']=finite(directions[n],0,360) if n<len(directions) and units.get('wind_direction') in ('Degrees','degrees') else None
             rows.append(row)
@@ -49,3 +50,56 @@ def populate(wb,qc,start,end,counts,audit):
         except (requests.RequestException,ValueError,KeyError,TypeError):
             # Requests exceptions can contain the credential-bearing URL.
             qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR','Synoptic request/schema unsuccessful; token redacted',URL]);counts['synoptic_errors']+=1
+
+PRECIP_URL='https://api.synopticdata.com/v2/stations/precip'
+
+def precip_total(payload,station,start,end):
+    if (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:raise ValueError('Synoptic precipitation API rejected request')
+    unit=str((payload.get('UNITS') or {}).get('precipitation') or '').lower()
+    factor={'inches':1,'in':1,'millimeters':1/25.4,'mm':1/25.4}.get(unit)
+    if factor is None:return None
+    for st in payload.get('STATION',[]):
+        if st.get('STID')!=station:continue
+        records=(st.get('OBSERVATIONS') or {}).get('precipitation') or []
+        if len(records)!=1:continue
+        x=records[0]
+        if timestamp(x.get('first_report'))!=start or timestamp(x.get('last_report'))!=end or not finite(x.get('count'),1,100000):continue
+        # Endpoint/count aggregates do not establish complete interior coverage.
+        # Only accept explicit contiguous accumulation intervals with their own units.
+        from common import interval_total
+        intervals=x.get('intervals')
+        if not isinstance(intervals,list):continue
+        readings=[]
+        for interval in intervals:
+            a=timestamp(interval.get('start_utc'));b=timestamp(interval.get('end_utc'));v=finite(interval.get('total'),0,10000)
+            if a is None or b is None or v is None:return None
+            readings.append((a,b,v))
+        value=interval_total(readings,start,end)
+        declared=finite(x.get('total'),0,10000)
+        if value is None or declared is None or abs(value-declared)>1e-6:continue
+        return finite(value*factor,0,100) if value is not None else None
+    return None
+
+def populate_rain(wb,qc,start,end,counts,audit):
+    from cocorahs import rain_bounds
+    from concurrent.futures import ThreadPoolExecutor
+    from common import public_url
+    a,b=rain_bounds(start,end);token=os.environ.get('SYNOPTIC_TOKEN');s=wb['Rainfall']
+    stations=[st for st in inventory(wb,'Rainfall') if st['network'].upper() in ('ASOS','AWOS','COOP','HADS','RAWS') and s.cell(st['row'],8).value is None]
+    def fetch(st):
+        # Only canonical ASOS ICAO prefix is normalized; COOP/HADS IDs unchanged.
+        sid=('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']
+        if not token:return st,None,None,'CREDENTIAL REQUIRED'
+        try:
+            r=requests.get(PRECIP_URL,params={'token':token,'stid':sid,'start':a.strftime('%Y%m%d%H%M'),
+                'end':b.strftime('%Y%m%d%H%M'),'pmode':'totals','units':'english,precip|in','obtimezone':'UTC','all_reports':0,'complete':1},timeout=20)
+            r.raise_for_status();value=precip_total(r.json(),sid,a,b)
+            return st,value,public_url(r.url),'REVIEW REQUIRED' if value is not None else 'INCOMPLETE'
+        except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR'
+    with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
+    for st,value,url,status in results:
+        detail='Exact ID and explicit units; Explicit contiguous accumulation intervals must cover the full UTC window. Aggregate endpoints/counts alone are insufficient.'
+        if value is not None:
+            s.cell(st['row'],8).value=round(value,2);s.cell(st['row'],9).value='I'
+            audit.add('Rainfall',st['row'],st['id'],'rain',round(value,2),'in',b,url,interval_start=a,raw_value=value,details=detail)
+        qc.append(['Rainfall',st['id'],st['network'],status,detail,url or PRECIP_URL]);counts['synoptic_rain_'+status]+=1

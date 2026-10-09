@@ -1,48 +1,66 @@
-# PSH Version 2 — GitHub-powered data collection
+# PSH Version 2
 
-This project is the successor to PSH_project. GitHub Actions runs the collection and creates an auditable workbook. **WeatherFlow stays manual.**
+A GitHub Actions system for collecting **review candidates** into the original LIX PSH workbook and publishing its tabs, sources, QC, provenance and downloads at [the dashboard](https://mefferso.github.io/PSH_version2/). It never issues an official PSH or writes to NOAA systems. Accurate unsupported fields remain blank; a green workflow means the products passed consistency checks, not that every source was available.
 
-## Run a test
+## Run and review
 
-1. The uploaded original **Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx** is already at the repository root. Keep it there, including its hyperlinks and formatted sheets.
-2. Open **Actions → Build PSH workbook → Run workflow**.
-3. Supply storm name, start and end UTC dates. Download the `PSH-...` workflow artifact after the run.
-4. Inspect the `QC` tab before considering observations operational.
+Changes to the collection, tests, dashboard, dependencies, template or `reviewed/` trigger verification and Pages publication automatically. The **Build PSH workbook** workflow also accepts storm name and inclusive UTC dates. Its development defaults are **Hurricane Isaias, October 8–9, 2026**: this label does not establish historical cyclone attribution. An unfinished current day cannot provide a complete rainfall total.
 
-**Current implementation is an initial foundation, not full-source operational coverage.** The collector supports IEM archived ASOS/AWOS wind and pressure and NOAA CO-OPS water levels for preloaded NOS stations and NDBC standard-meteorological data for linked Buoy/C-MAN/WLON rows with validated station hyperlinks. CO-OPS elevations are explicitly requested in feet relative to MHHW and are always marked for review before issuance. Other network adapters (USGS, USACE, WeatherSTEM, Synoptic/MesoWest and CoCoRaHS) and tornado/impact narratives are **not yet wired up**. The workflow leaves their observations untouched, instead of inventing values or silently marking them complete. A run must not be treated as a complete PSH.
+Every reading has a source URL, exact template station row/identifier, units, UTC time, original value/unit and QC. Water elevations also require datum evidence. The original binary template is unchanged. Generated workbooks clear example observations and impact narratives, preserve station metadata, links and formatting, replace spreadsheet-specific summary formulas with native top-ten tables, and add QC. Download the workbook or ZIP from Pages, and examine QC and provenance before using a value.
 
-The shipped code:
-- uses the template station metadata and keeps WeatherFlow observations manually editable;
-- validates event dates, records source URLs and separates missing from suspicious data;
-- writes one peak sustained wind, peak gust and minimum sea-level pressure per station, including independently determined UTC observation times;
-- preserves original workbook formulas, formatting and hyperlinks as far as the spreadsheet library permits;
-- publishes an XLSX artifact rather than pushing automatically to the live NOAA Google Sheet.
+| Source | Automatic behavior | Remaining limitations |
+|---|---|---|
+| ASOS/AWOS | IEM archived METAR wind, gust and sea-level pressure; NOAA/IEM minute archive for exact ASOS stations adds documented two-minute winds, five-second peaks and fully covered minute rainfall | Minute archive can lag; missing periods, traces and incomplete routine METAR intervals prevent rainfall totals. Station pressures are never relabelled MSLP. AWOS minute coverage is not assumed. |
+| NDBC buoy/C-MAN/WLON links | Recent 45-day and annual standard-meteorological wind, gust, pressure; header units verified; m/s to knots | Missing archives/access errors flagged. Conflicting timestamp records withheld. Mean-wind direction is not used as gust direction. Monthly-only archives and differing sampling periods need review. |
+| NOAA CO-OPS | Water-level maximum explicitly requested in feet MHHW, with station datum metadata | Datum request/metadata failures leave blank. Qualified samples retain their source flags and review status. |
+| USGS | Direct NAVD88 elevations from explicitly verified parameter codes 63160, 62620, 62615, with exact site and single-series gates | Stage 00065 has no inferred offset. USGS rain/wind rows need verified series semantics and remain unsupported. 62020 is not an elevation code. |
+| USACE / Louisiana CPRA | Exact RiverGages station metadata audit; historical HML stage collection and NAVD88 conversion supported only with an independently reviewed, event-effective station registry | No offsets are supplied or auto-approved. Current gage-zero text alone does not prove a historical conversion. All unverified stations stay blank. |
+| WeatherSTEM | Exact linked station/sensor archive; explicit-unit ten-minute gusts; sustained wind only with explicit averaging metadata; MSLP only when explicitly identified | Public metadata often lacks sustained averaging or sea-level pressure identity. Rain counter/reset semantics and historical sensor changes are unverified. No nearby-station substitution. |
+| Synoptic / MesoWest | Exact CWOP/RAWS wind/gust/MSLP timeseries with `SYNOPTIC_TOKEN`; exact ASOS/AWOS/COOP/HADS/RAWS precipitation queries | Sensor ambiguity, units, access and availability are checked. Aggregate endpoints/counts alone do not prove complete rainfall; explicit contiguous accumulation intervals are required. |
+| CoCoRaHS | Official exact-station historical requests, pagination, padded-ID normalization and documented-interval aggregation | Observed public responses lack `numDays` and have unresolved UTC/local-clock semantics. Those totals are withheld, even if summing displayed daily values resembles an issued report. |
+| Tornadoes | Confirmed NCEI Storm Events, LIX records explicitly naming the storm, source timezone converted to UTC | Archive publication lag and missing storm association prevent completeness. No match does not prove zero tornadoes; preliminary reports are not confirmed records. |
+| Other linked networks | COOP/HADS/RAWS rainfall queried through exact-ID Synoptic; all inventory rows receive QC | Exact archive mapping and accumulation semantics can be absent. TPCG rows lack usable source links; no nearby substitute is invented. |
+| WeatherFlow | Original metadata retained; dashboard reviewed-entry form and JSON import template | Automatic collection intentionally excluded. |
+| Inland flooding / impacts | Tabs and county metadata preserved, stale examples cleared, missing narratives/counts explicitly flagged | Requires verified storm-specific records and human review. Fatality/injury/evacuation values are never invented. |
 
-## Architecture
+## Reporting conventions
 
-GitHub Actions is the runner. The checked-in LIX workbook is the station inventory and output template. Source adapters collect measurements by *actual observing-site identifier* and the parser records provenance and timing. QC rejects ambiguous units, nonnumeric values, and missing-time records. Generated files are workflow artifacts.
+The [NWSI 10-601 guide, August 17, 2026](https://www.weather.gov/media/directives/010_pdfs/pd01006001curr.pdf), section 8, controls candidate thresholds: gust **greater than 33 kt** or sea-level pressure **less than 1005 mb**, rainfall **at least 3 inches**, and explicit water datums. Lower readings remain in review exports. Wind candidate CSV has the guide's 29 columns; rain 9, water 14, tornado 11. CSVs contain headers and populated records, no blank/footer rows; ambiguous duplicate station IDs are excluded and flagged. Template rows are preserved. Candidate CSVs still require meteorologist review, storm attribution and operational decisions.
 
-**Required next stages before replacing the older PSH automation:** inventory and validate all hyperlinks; validate CO-OPS results against a completed storm; USGS parameter/datum checks; USACE station mappings; WeatherSTEM and Synoptic/MesoWest adapters; daily CoCoRaHS storm totals with observation-window handling; optional verified tornado summaries; regression comparisons with Francine/Bertha; optional authenticated Google Sheets updates. In the original NWS guidance, unique station IDs and no blank rows in reported CSV data are mandatory. Do not erase existing station metadata or historical links.
+Rain defaults to midnight UTC on the first date through midnight after the last date. Set both `rain_start_utc` and `rain_end_utc` workflow inputs, or local `RAIN_START_UTC`/`RAIN_END_UTC`, for another interval. Every rain adapter, reviewed import, workbook heading and validator uses the same interval. Missing/trace reports are never silently zero and overlapping daily/rolling amounts are not added.
 
-No credential needs to be committed to the repository. If Google Sheets writeback is added, use GitHub Actions secrets and a properly authorized account rather than personal credentials in code.
+## Manual additions and datum registries
 
+Use **Add WeatherFlow** on the dashboard, select the original station, enter a measurement in the displayed units, UTC time and source URL, and explicitly attest review. Download the staged JSON. The form stages observations locally; it does not publish them immediately. Commit a reviewed file such as `reviewed/weatherflow.json`, then select its path in the workflow's `reviewed_import` input. Locally use `PSH_IMPORT_FILE=/path/to/reviewed.json`. Imports validate the complete batch, exact tab/row/site/network, units, ranges and dates before changes. A reviewed override replaces the active audit and stores superseded readings; omitted directions are cleared.
 
-## Browser dashboard (GitHub Pages)
+Other reviewed observations use the same schema; see `scripts/imports.py`. Rain needs `interval_start_utc` and the full interval endpoint. Water requires `datum` plus two independently hosted evidence citations. For a USACE/CPRA registry, use `datum_registry` or `PSH_DATUM_REGISTRY`. Each record requires `site_id`, exact original `rivergages_sid`, `datum: "NAVD88"`, numeric `offset_ft`, `reviewed: true`, `effective_start_utc`, `effective_end_utc`, and `evidence` URLs from two independent hosts. See `scripts/datums.py` and tests. Citations record a human-reviewed conversion; mere hostname independence does not automatically validate its substance.
 
-The latest run can be viewed at **https://mefferso.github.io/PSH_version2/** once Pages is enabled.
+## Development and verification
 
-**One-time setup:** In the GitHub repository, go to **Settings → Pages → Build and deployment → Source: GitHub Actions**. Then run **Actions → Build PSH workbook → Run workflow** again with the selected storm and UTC range. Each successful run will deploy the data dashboard and current XLSX, so you do **not** have to download workbooks merely to inspect changes.
+Python 3.12 and Node 24 are used in CI. Install frozen Python dependencies and dashboard DOM-test dependencies:
 
-The dashboard has per-tab tables, station hyperlinks, search/filter, and a QC tab. It displays only the observational data the collector actually wrote; unimplemented networks and the original Google Sheets-only summary QUERY formulas remain clearly marked incomplete. **The public Pages site exposes station information and the generated XLSX publicly; do not put confidential observations or credentials in the template.**
+```bash
+python3 -m venv /workspace/psh-venv
+source /workspace/psh-venv/bin/activate
+python -m pip install -r requirements.lock.txt
+npm ci --ignore-scripts --cache /tmp/psh-npm-cache
+python -m unittest discover -s tests -v
+STORM_NAME='Hurricane Isaias' START_UTC=2026-10-08 END_UTC=2026-10-09 python scripts/build.py
+python scripts/validate.py
+python scripts/export_dashboard.py
+python scripts/validate.py --site
+```
 
-Do not use Actions' **Re-run jobs** on runs created before the dashboard workflow was added: start a **new Run workflow** to publish the site.
+Tests exercise the real workbook, source identity/unit/time errors, missing intervals, datums, reviewed overrides, reporting thresholds, stale narratives, summary/CSV tampering, downloads and dashboard interactions. DOM tests execute the shipped JavaScript; they do not assert browser pixel appearance. Chromium could not complete in the onboarding container.
 
+The publication gate checks template checksum, original station metadata/styles/links and merged structure, one active audit per measurement, UTC fields and rain intervals, exact values/datums, recomputed top-ten tables, CSVs and dashboard/download consistency. Only current manifested artifacts enter the ZIP. Network failures remain distinguishable from missing observations in QC.
 
-### NDBC collector (new, awaiting live regression check)
+The unmodified completed Francine workbook from `mefferso/PSH_project` is in `tests/fixtures/`, with its provenance and checksum documented there. Run a separate live Francine collection for September 10–12, 2024, then compare:
 
-Linked NDBC Buoy, C-MAN, and WLON stations are retrieved using the source station ID (not a nearby substitute). The adapter prefers the NDBC last-45-days feed for recent dates and attempts annual standard-meteorological archives for older dates. Winds/gusts convert from m/s to knots; sea-level pressure remains hPa/mb. Missing values are excluded, and each independently timed extreme populates the existing Wind and Pressure columns. Data that cannot be retrieved is shown as **NO DATA/ERROR** in QC, not as a successful observation. NDBC sampling periods and metadata vary by station; validate these against the station page before operational use. Please initiate a **new** workflow run to test these changes. The workflow includes NDBC parser unit tests.
+```bash
+python scripts/regression.py output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx
+```
 
+Tolerance: wind/gust 1 kt, pressure 0.5 mb, rainfall 0.12 inches, water 0.15 feet. Missing and ambiguous readings are counted separately, never as agreement. Do not widen tolerances to hide source differences. See [validation records](docs/validation/) for actual live results and unresolved discrepancies.
 
-### RiverGages USACE / Louisiana CPRA audit
-
-The source inventory now checks original RiverGages station hyperlinks against the station source (USACE or LA CPRA) and writes each match into the QC tab with a **DATUM REVIEW** status. Many RiverGages series are stage with station-specific gage zero, historical NAVD88 adjustments and effective dates. There is **no automated USACE/CPRA water-level ingestion yet**; this audit does not count as collected data. Before numerical collection is implemented, each site needs an independently verified datum and archive endpoint. Unverified stage-to-NAVD88 conversions remain prohibited.
+`SYNOPTIC_TOKEN` is an Actions secret confirmed by the repository owner. No secrets are committed or included in URLs. It need not be present in the cloud shell; credentialed validation runs in Actions. Saved cloud setup instructions reproduce the dependency installation and checks; changes to that environment draft require publication in environment settings for future tasks.
