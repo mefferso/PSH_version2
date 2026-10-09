@@ -1,18 +1,29 @@
 name: Build PSH workbook
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**'
+      - 'tests/**'
+      - 'site/**'
+      - 'requirements.txt'
+      - '.github/workflows/build-psh.yml'
   workflow_dispatch:
     inputs:
       storm_name:
         description: "Storm name and type (e.g. Hurricane Francine)"
         required: true
+        default: "Hurricane Isaias"
         type: string
       start_utc:
         description: "First UTC date YYYY-MM-DD"
         required: true
+        default: "2026-10-08"
         type: string
       end_utc:
         description: "Last UTC date YYYY-MM-DD"
         required: true
+        default: "2026-10-09"
         type: string
 permissions:
   contents: read
@@ -39,9 +50,9 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Build workbook and QC
         env:
-          STORM_NAME: ${{ inputs.storm_name }}
-          START_UTC: ${{ inputs.start_utc }}
-          END_UTC: ${{ inputs.end_utc }}
+          STORM_NAME: ${{ inputs.storm_name || 'Hurricane Isaias' }}
+          START_UTC: ${{ inputs.start_utc || '2026-10-08' }}
+          END_UTC: ${{ inputs.end_utc || '2026-10-09' }}
         run: python scripts/build.py
       - name: Export dashboard data
         run: python scripts/export_dashboard.py
