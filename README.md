@@ -2,6 +2,8 @@
 
 A GitHub Actions system for collecting **review candidates** into the original LIX PSH workbook and publishing its tabs, sources, QC, provenance and downloads at [the dashboard](https://mefferso.github.io/PSH_version2/). It never issues an official PSH or writes to NOAA systems. Accurate unsupported fields remain blank; a green workflow means the products passed consistency checks, not that every source was available.
 
+[Consolidated implementation and live validation report](docs/validation/2026-10-09-report.md) includes source limits and unresolved Francine differences.
+
 ## Run and review
 
 Changes to the collection, tests, dashboard, dependencies, template or `reviewed/` trigger verification and Pages publication automatically. The **Build PSH workbook** workflow also accepts storm name and inclusive UTC dates. Its development defaults are **Hurricane Isaias, October 8–9, 2026**: this label does not establish historical cyclone attribution. An unfinished current day cannot provide a complete rainfall total.
