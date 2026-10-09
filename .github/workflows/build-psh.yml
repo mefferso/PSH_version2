@@ -1,0 +1,42 @@
+name: Build PSH workbook
+on:
+  workflow_dispatch:
+    inputs:
+      storm_name:
+        description: "Storm name and type (e.g. Hurricane Francine)"
+        required: true
+        type: string
+      start_utc:
+        description: "First UTC date YYYY-MM-DD"
+        required: true
+        type: string
+      end_utc:
+        description: "Last UTC date YYYY-MM-DD"
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  collect:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+      - name: Build workbook and QC
+        env:
+          STORM_NAME: ${{ inputs.storm_name }}
+          START_UTC: ${{ inputs.start_utc }}
+          END_UTC: ${{ inputs.end_utc }}
+        run: python scripts/build.py
+      - name: Upload workbook and audit
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSH-output-${{ github.run_number }}
+          path: output/
+          if-no-files-found: warn
