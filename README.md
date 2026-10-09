@@ -4,7 +4,7 @@ This project is the successor to PSH_project. GitHub Actions runs the collection
 
 ## Run a test
 
-1. Add the original **Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx** workbook to `templates/PSH_LIX.xlsx` via GitHub's **Add file → Upload files**. Retain the entire original workbook, including its hyperlinks and formatted sheets.
+1. The uploaded original **Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx** is already at the repository root. Keep it there, including its hyperlinks and formatted sheets.
 2. Open **Actions → Build PSH workbook → Run workflow**.
 3. Supply storm name, start and end UTC dates. Download the `PSH-...` workflow artifact after the run.
 4. Inspect the `QC` tab before considering observations operational.
