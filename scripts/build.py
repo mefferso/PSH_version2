@@ -14,6 +14,7 @@ from collections import Counter
 
 import requests
 from openpyxl import load_workbook
+from openpyxl.cell.cell import MergedCell
 from openpyxl.styles import Font, PatternFill
 
 TEMPLATE = pathlib.Path("Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx")
@@ -128,14 +129,18 @@ def build():
             if not sid or sid.startswith("["): continue
             if "WXFLOW" in str(sheet.cell(row_num, 7).value or "").upper(): continue
             for col in range(first_col, last_col + 1):
-                sheet.cell(row_num, col).value = None
+                cell = sheet.cell(row_num, col)
+                if not isinstance(cell, MergedCell):
+                    cell.value = None
     # Sample tornado placeholders aren't verified tornadoes.
     tornado = wb["Tornadoes"]
     for row_num in range(2, tornado.max_row + 1):
         first = str(tornado.cell(row_num, 1).value or "")
         if first.startswith("[Insert"):
             for col in range(1, 12):
-                tornado.cell(row_num, col).value = None
+                cell = tornado.cell(row_num, col)
+                if not isinstance(cell, MergedCell):
+                    cell.value = None
     totals = Counter()
     for row in range(2, wind.max_row + 1):
         sid = str(wind.cell(row, 1).value or "").strip()
@@ -147,7 +152,9 @@ def build():
             continue
         # Clear stale wind/pressure measurements on all non-WeatherFlow stations.
         for col in range(11, 31):
-            wind.cell(row, col).value = None
+            cell = wind.cell(row, col)
+            if not isinstance(cell, MergedCell):
+                cell.value = None
         if network not in ("ASOS", "AWOS"):
             totals["other_network_pending"] += 1
             continue
