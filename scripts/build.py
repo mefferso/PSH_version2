@@ -15,6 +15,7 @@ from collections import Counter
 import requests
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
+from coops import populate as populate_coops
 from openpyxl.styles import Font, PatternFill
 
 TEMPLATE = pathlib.Path("Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx")
@@ -179,11 +180,12 @@ def build():
             qc.append(["Wind and Pressure", sid, network, "ERROR", str(exc)[:250], IEM_URL])
             totals["ERROR"] += 1
         time.sleep(0.15)
+    populate_coops(wb, qc, start, end, totals)
     # The original 2025 template's Summary uses Google QUERY formulas, which cannot
     # recalculate in Excel. Do not claim the Summary top-10 blocks are populated.
     qc.append(["Summary", "", "", "REVIEW REQUIRED",
                "Google QUERY formulas will not recalculate in exported Excel; use native Google Sheet or implement explicit top-10 rendering.", ""])
-    for tab in ("Rainfall", "Water Level", "Tornadoes", "Inland Flooding", "Impacts"):
+    for tab in ("Rainfall", "Tornadoes", "Inland Flooding", "Impacts"):
         if tab in wb:
             qc.append([tab, "", "", "NOT AUTOMATED", "No data collected by this initial version", ""])
     qc.freeze_panes = "A2"
@@ -197,9 +199,9 @@ def build():
     target = OUT / f"PSHLIX_{start.year}_{slug}_PARTIAL.xlsx"
     wb.save(target)
     report = {"storm": name, "start_utc": str(start), "end_utc": str(end),
-              "coverage": "PARTIAL ASOS/AWOS ONLY", "counts": dict(totals),
+              "coverage": "PARTIAL ASOS/AWOS AND CO-OPS", "counts": dict(totals),
               "manual_networks": ["WeatherFlow"], "not_yet_automated": [
-                  "CO-OPS", "USGS", "USACE", "NDBC", "Synoptic", "WeatherSTEM",
+                  "USGS", "USACE", "NDBC", "Synoptic", "WeatherSTEM",
                   "CoCoRaHS", "Tornadoes", "Inland Flooding", "Impacts", "Summary top 10"]}
     (OUT / "QC.json").write_text(json.dumps(report, indent=2))
     print(json.dumps(report, indent=2))
