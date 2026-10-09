@@ -24,3 +24,14 @@ class ReferenceTests(unittest.TestCase):
         expected=s.cell(target,17).value;s.cell(target,17).value=expected+5
         result=regression.compare(generated,load_workbook(REFERENCE))
         self.assertTrue(any(x['site_id']=='KBTR' and x['variable']=='gust' and x['status']=='DISCREPANCY' for x in result['observations']))
+
+class RainWindowRegressionTests(unittest.TestCase):
+    def test_different_rainfall_intervals_are_not_numerical_accuracy_passes(self):
+        from copy import deepcopy
+        import regression
+        reference=load_workbook(ROOT/'tests/fixtures/PSHLIX_2024AL06_Francine_Data.xlsx',data_only=True)
+        generated=deepcopy(reference);generated['Rainfall']['B228']='0000 UTC Sep 10 2024'
+        result=regression.compare(generated,reference)
+        rain=[x for x in result['observations'] if x['variable']=='rain' and x['generated'] is not None]
+        self.assertTrue(rain);self.assertTrue(all(x['status']=='WINDOW MISMATCH' for x in rain))
+        self.assertEqual(result['window_mismatch'],len(rain))

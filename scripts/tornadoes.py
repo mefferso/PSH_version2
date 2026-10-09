@@ -56,7 +56,7 @@ def populate(wb,qc,start,end,counts,audit):
                 t.strftime('%H%M'),t.day,t.month,t.year,event['rating'],'NCEI event '+event['id']+'; '+event['narrative']]
             for c,v in enumerate(values,1):s.cell(r,c).value=v
             audit.add('Tornadoes',r,event['id'],'tornado',1,'event',t,event['url'],details='Confirmed Storm Events; '+event['zone']+' converted to UTC; storm explicitly named in narrative')
-        wb['Summary']['B11']=len(events)
+        wb['Summary']['B11']=len(events) if events else None
         qc.append(['Tornadoes','','NCEI','REVIEW REQUIRED',f'{len(events)} confirmed records explicitly name storm; zero matched records does not establish no tornadoes',urls[0] if urls else BASE])
         counts['confirmed_tornado_records']=len(events)
     except (requests.RequestException,ValueError,KeyError,OSError,UnicodeError):

@@ -47,7 +47,7 @@ def parse(raw,metadata,start,end):
             if v is None:continue
             if n=='anemometer' and unit in FACTORS:
                 period=finite(meta.get('averaging_period_minutes'),1,10)
-                if period is not None and t-dt.timedelta(minutes=period)>=a:row['wind']=finite(v*FACTORS[unit],0,180)
+                if period in (1,2,8,10) and t-dt.timedelta(minutes=period)>=a:row['wind']=finite(v*FACTORS[unit],0,180)
             elif re.fullmatch(r'10\s*minute\s*wind\s*gust',n) and unit in FACTORS:
                 if t-dt.timedelta(minutes=10)>=a:row['gust']=finite(v*FACTORS[unit],0,200)
             elif n=='wind vane' and unit in ('degrees','Degrees','deg','&deg;'):row['dir']=finite(v,0,360)

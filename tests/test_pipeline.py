@@ -29,6 +29,8 @@ class PipelineTests(unittest.TestCase):
             self.assertTrue(validate.validate(out,ROOT/'Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx'))
             generated=load_workbook(out/manifest['workbook']);original=load_workbook(ROOT/'Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
             self.assertEqual(generated['Summary']['D20'].value,40)
+            self.assertNotIn('[',generated['Rainfall']['B230'].value)
+            self.assertNotIn('1-hour',generated['Water Level']['B117'].value)
             for tab,cols in [('Wind and Pressure',10),('Rainfall',7),('Water Level',6)]:
                 for r in [1]+[st["row"] for st in inventory(original,tab)]:
                     for c in range(1,cols+1):

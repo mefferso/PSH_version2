@@ -6,7 +6,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 import synoptic
 class SynopticTests(unittest.TestCase):
     def test_units_identity_and_variable_specific_direction(self):
-        data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s','sea_level_pressure':'Pa','wind_direction':'Degrees'},'STATION':[{'STID':'BBNL1','OBSERVATIONS':{'date_time':['2024-09-11T12:00:00Z'],'wind_speed_set_1':[10],'wind_gust_set_1':[15],'wind_direction_set_1':[90],'sea_level_pressure_set_1':[99000]}}]}
+        data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s','sea_level_pressure':'Pa','wind_direction':'Degrees'},'STATION':[{'STID':'BBNL1','SENSOR_VARIABLES':{'wind_speed':{'wind_speed_set_1':{'averaging_period_minutes':2}}},'OBSERVATIONS':{'date_time':['2024-09-11T12:00:00Z'],'wind_speed_set_1':[10],'wind_gust_set_1':[15],'wind_direction_set_1':[90],'sea_level_pressure_set_1':[99000]}}]}
         rows=synoptic.parse(data,'BBNL1',dt.date(2024,9,11),dt.date(2024,9,11))
         self.assertAlmostEqual(rows[0]['wind'],19.4384449244)
         self.assertEqual(rows[0]['pressure'],990)
@@ -31,3 +31,16 @@ class InteriorRainGapTests(unittest.TestCase):
         a=dt.datetime(2024,9,11,tzinfo=dt.timezone.utc);b=a+dt.timedelta(days=1)
         payload={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'precipitation':'Inches'},'STATION':[{'STID':'LIX','OBSERVATIONS':{'precipitation':[{'total':7,'count':2,'first_report':a.isoformat(),'last_report':b.isoformat()}]}}]}
         self.assertIsNone(synoptic.precip_total(payload,'LIX',a,b))
+
+class SustainedPeriodTests(unittest.TestCase):
+    def test_generic_wind_speed_is_not_labelled_sustained_without_averaging_metadata(self):
+        payload={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s'},'STATION':[{'STID':'X','OBSERVATIONS':{'date_time':['2024-09-11T12:00:00Z'],'wind_speed_set_1':[10]}}]}
+        rows=synoptic.parse(payload,'X',dt.date(2024,9,11),dt.date(2024,9,11))
+        self.assertIsNone(rows[0]['wind'])
+        self.assertAlmostEqual(rows[0]['unqualified_wind'],19.4384449244)
+
+class InternalWindQCTests(unittest.TestCase):
+    def test_gust_below_concurrent_speed_is_quarantined(self):
+        data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s'},'STATION':[{'STID':'F8544','OBSERVATIONS':{'date_time':['2024-09-11T23:35:00Z'],'wind_speed_set_1':[28.166],'wind_gust_set_1':[3.575]}}]}
+        rows=synoptic.parse(data,'F8544',dt.date(2024,9,11),dt.date(2024,9,11))
+        self.assertIsNone(rows[0]['gust']);self.assertTrue(rows[0]['wind_qc'])

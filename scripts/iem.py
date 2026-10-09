@@ -64,7 +64,8 @@ def write_wind(sheet,r,rows,site,audit,default_url,details):
         for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):sheet.cell(r,offset+n).value=v
         audit.add('Wind and Pressure',r,site,field,round(value,1),'hPa' if field=='pressure' else 'kn',t,
                   sample.get('url') or default_url,raw_value=sample.get(field+'_original_value',value),
-                  raw_unit=sample.get(field+'_original_unit'),status='REVIEW REQUIRED',details=details)
+                  raw_unit=sample.get(field+'_original_unit'),status='REVIEW REQUIRED',
+                  details=details+f'; {len(good)} available readings for this variable, first {min(x["time"] for x in good).isoformat()}, last {max(x["time"] for x in good).isoformat()}; no claim of complete event coverage')
         if sample.get('retrieval'):audit.entries[-1]['retrieval']=sample['retrieval']
         written+=1
     sheet.cell(r,28).value='I';sheet.cell(r,29).value='A'

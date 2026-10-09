@@ -77,6 +77,13 @@ def build():
     counts=Counter();audit=Audit()
     wb['Summary']['B3']=name;wb['Summary']['B5']='NWS New Orleans/Baton Rouge'
     wb['Summary']['B7']=f'{start:%m/%d/%Y} - {end:%m/%d/%Y}'
+    updated=dt.datetime.now(dt.timezone.utc).strftime('%m/%d/%Y')
+    for tab,row,detailrow in [('Wind and Pressure',172,173),('Rainfall',230,231),('Water Level',115,116)]:
+        wb[tab].cell(row,2).value=updated
+        wb[tab].cell(detailrow,2).value='Automated review build; source availability and qualifications are listed in QC and provenance.'
+    wb['Summary']['A113']='Review workbook last generated on '+updated
+    wb['Wind and Pressure']['B174']='Source sampling, averaging periods, exposure and coverage require review; qualified source values only. Unavailable values remain blank.'
+    wb['Water Level']['B117']='NOS readings use verified MHHW metadata. Other water values require direct NAVD88 or independently reviewed event-effective conversion evidence. NAVD88 elevation is not automatically inundation depth. Sampling and source availability vary; see QC.'
     a,b=rain_bounds(start,end)
     wb['Rainfall']['B232']=a.strftime('%H%M UTC %b %d %Y');wb['Rainfall']['B233']=b.strftime('%H%M UTC %b %d %Y')
     wb['Rainfall']['B234']='Only fully documented accumulation windows are automated. No interpolation across missing periods or inclusion of overlapping daily reports.'

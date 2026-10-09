@@ -27,9 +27,23 @@ def parse(payload,station,start,end):
                 values=series(name);factor=FACTORS[name].get(units.get(name));v=finite(values[n]) if n<len(values) else None
                 row[key]=finite(v*factor,lo,hi) if v is not None and factor is not None else None
                 row[key+'_original_value']=v;row[key+'_original_unit']=units.get(name)
+            if row.get('wind') is not None and row.get('gust') is not None and row['gust']<row['wind']:
+                row['wind_qc']='Gust below concurrent speed; both observations quarantined'
+                row['wind']=None;row['gust']=None
+            sensors=(st.get('SENSOR_VARIABLES') or {}).get('wind_speed') or {}
+            descriptions=[v for k,v in sensors.items() if k.startswith('wind_speed_set_') and isinstance(v,dict)]
+            period=finite(descriptions[0].get('averaging_period_minutes')) if len(descriptions)==1 else None
+            if period not in (1,2,8,10):
+                row['unqualified_wind']=row.get('wind');row['wind']=None
+            else:row['wind_averaging_period_minutes']=period
             directions=series('wind_direction')
             row['dir']=finite(directions[n],0,360) if n<len(directions) and units.get('wind_direction') in ('Degrees','degrees') else None
             rows.append(row)
+    # A gust maximum below the source's maximum speed is not a defensible storm gust.
+    raw_speeds=[finite(x.get('wind_original_value'))*FACTORS['wind_speed'].get(x.get('wind_original_unit'),1) for x in rows if finite(x.get('wind_original_value')) is not None and x.get('wind_original_unit') in FACTORS['wind_speed']]
+    gusts=[x['gust'] for x in rows if x.get('gust') is not None]
+    if raw_speeds and gusts and max(gusts)<max(raw_speeds) and any(x.get('wind_qc') for x in rows):
+        for x in rows:x['gust']=None;x['wind_qc']='Gust series inconsistent with concurrent speeds; maximum withheld'
     return rows
 
 def populate(wb,qc,start,end,counts,audit):
@@ -45,7 +59,14 @@ def populate(wb,qc,start,end,counts,audit):
             r.raise_for_status();rows=parse(r.json(),st['id'],start,end)
             n=write_wind(wb['Wind and Pressure'],st['row'],rows,st['id'],audit,r.url,'Synoptic exact-ID sensor; unit-qualified; MSLP only')
             from common import public_url
-            qc.append(['Wind and Pressure',st['id'],st['network'],'REVIEW REQUIRED' if n else 'NO DATA',f'{len(rows)} samples; {n}/3 variables',public_url(r.url)])
+            candidates=[x for x in rows if x.get('unqualified_wind') is not None]
+            detail=f'{len(rows)} samples; {n}/3 qualified variables. Sustained wind requires explicit 1/2/8/10-minute averaging metadata.'
+            inconsistent=sum(bool(x.get('wind_qc')) for x in rows)
+            if inconsistent:detail+=f' {inconsistent} records flagged for inconsistent gust/speed; see source.'
+            if candidates:
+                peak=max(candidates,key=lambda x:x['unqualified_wind'])
+                detail+=f' Unqualified speed peak {peak["wind_original_value"]} {peak["wind_original_unit"]} at {peak["time"].isoformat()} withheld from PSH sustained column.'
+            qc.append(['Wind and Pressure',st['id'],st['network'],'REVIEW REQUIRED' if n else 'METADATA REVIEW' if candidates else 'NO DATA',detail,public_url(r.url)])
             counts['synoptic_collected' if n else 'synoptic_no_data']+=1
         except (requests.RequestException,ValueError,KeyError,TypeError):
             # Requests exceptions can contain the credential-bearing URL.
