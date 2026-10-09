@@ -16,7 +16,7 @@ import requests
 from openpyxl import load_workbook
 from openpyxl.styles import Font, PatternFill
 
-TEMPLATE = pathlib.Path("templates/PSH_LIX.xlsx")
+TEMPLATE = pathlib.Path("Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx")
 OUT = pathlib.Path("output")
 IEM_URL = "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py"
 REQUEST_TIMEOUT = 45
@@ -102,7 +102,7 @@ def build():
     if start > end or (end - start).days > 35:
         raise ValueError("Invalid date range (maximum 36 inclusive days)")
     if not TEMPLATE.exists():
-        raise FileNotFoundError("Upload the original workbook to templates/PSH_LIX.xlsx first (README).")
+        raise FileNotFoundError("Upload the original PSH workbook to the repository root first (README).")
     wb = load_workbook(TEMPLATE)
     needed = {"Summary", "Wind and Pressure", "Rainfall", "Water Level", "Tornadoes"}
     if not needed.issubset(set(wb.sheetnames)):
