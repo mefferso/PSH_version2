@@ -1,0 +1,13 @@
+# PSH automation design
+
+Implement the user's autonomous end-to-end assignment using the existing LIX workbook as the exact station inventory. Preserve sheet names, metadata, hyperlinks, styles, and all WeatherFlow manual entries. Do not manufacture storm impacts or associate the 2026-10-08 through 2026-10-09 development window with historical Isaias impacts.
+
+Adapters return independently timed, unit-qualified observations for exact linked identifiers. A shared audit records each written measurement, original units/value, UTC interval/time, retrieval URL and datum evidence. Missing, suspect, preliminary, incomplete and unsupported data remain distinguishable. Incomplete rainfall accumulations must not be represented as complete storm totals. Station-specific datum conversions require independently documented offsets and effective dates; raw stage is never relabeled NAVD88.
+
+Use public historical endpoints for IEM ASOS/AWOS and COOP/HADS, NDBC, NOAA CO-OPS datum metadata and water levels, and USGS. Integrate Synoptic only with an available credential. Investigate WeatherSTEM archive access, RiverGages/CPRA historical endpoints and CoCoRaHS daily observation windows; if live access or a validated schema is unavailable, expose the precise limitation per station and provide validated source imports rather than guess a scraper. Tornadoes require confirmed authoritative events and UTC conversions; preliminary LSRs are not confirmed tornadoes.
+
+Replace Google QUERY summary formulas with explicit sorted top-10 blocks respecting the template's land/marine and anemometer height criteria. Provide review CSVs, a per-measurement provenance audit, and workbook/dashboard structural validation. Official CSV thresholds must be verified against the PSH instruction guide before claiming issuance readiness; review exports remain marked development products.
+
+Dashboard exposes every PSH sheet, summary tables, station source links, QC and provenance, downloadable workbook/CSV/audit, and a WeatherFlow import template. GitHub Actions must test, build, validate, and then publish; outputs record the commit/run used. Publication and live regression are complete only with actual workflow and dashboard evidence.
+
+Validation uses meaningful parser/unit/identity/datum/window tests, workbook metadata/style/hyperlink preservation, mocked end-to-end collection, live requests, and Francine reference comparisons when authoritative references are accessible. Never label synthetic fixtures as historical regression. Missing credentials/network access are blockers, not proof that the source has no data.
