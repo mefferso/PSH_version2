@@ -1,5 +1,5 @@
 name: PSH operational acceptance
-# Independent historical run: verify archive retrieval, stage-only QC, downloads, and export consistency.
+# Independent historical run: validate archive rain recovery and review exports.
 on:
   push:
     paths:
