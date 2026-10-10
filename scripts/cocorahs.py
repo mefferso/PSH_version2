@@ -237,6 +237,17 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 amount,obs_start,obs_end=nearby
                 detail+=f'; NEARBY COMPLETE GAUGE WINDOW (review only): {amount:.2f} inches from {obs_start.isoformat()} through {obs_end.isoformat()}, NOT exact requested storm total'
                 counts['cocorahs_nearby_complete_review']+=1
+                if sheet.cell(st['row'],8).value is None:
+                    observed_value=round(amount,2)
+                    sheet.cell(st['row'],8).value=observed_value
+                    sheet.cell(st['row'],9).value='I'
+                    entry=audit.add('Rainfall',st['row'],st['id'],'rain',observed_value,'in',b,url,
+                        interval_start=a,status='INCOMPLETE',
+                        details=detail+'; actual observation window differs from requested window')
+                    entry['actual_interval_start_utc']=obs_start.isoformat()
+                    entry['actual_interval_end_utc']=obs_end.isoformat()
+                    entry['reporting_window_mismatch']=True
+                    counts['cocorahs_shifted_window_populated']+=1
         if value is None:detail+='; no complete tiling of requested window; available reports retained for review. '+json.dumps(candidates,allow_nan=False)
         if value is None:
             for record in records:
