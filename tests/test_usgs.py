@@ -72,3 +72,18 @@ class CredentialHeaderTests(unittest.TestCase):
         with patch.dict(os.environ,{'USGS_API_KEY':'fixture-key'}):url=usgs.parameter_evidence('63160',session)
         self.assertEqual(session.get.call_args.kwargs.get('headers',{}).get('X-Api-Key'),'fixture-key')
         self.assertNotIn('fixture-key',url)
+
+class USGSStageReviewTests(unittest.TestCase):
+    def test_stage_remains_separate_from_direct_navd88_elevation(self):
+        from usgs import parse_stage_candidates
+        payload={'features':[{'properties':{
+            'monitoring_location_id':'USGS-'+site,'parameter_code':code,
+            'unit_of_measure':unit,'value':value,'time':'2024-09-11T12:00:00Z'}}
+            for site,code,unit,value in [
+                ('07374527','00065','ft','12.50'),
+                ('07374527','63160','ft','3.20'),
+                ('07374527','00065','m','4.0'),
+                ('00000000','00065','ft','99.0')]]}
+        rows=parse_stage_candidates(payload,'07374527',dt.date(2024,9,11),dt.date(2024,9,11))
+        self.assertEqual([v for v,_ in rows],[12.5])
+        self.assertEqual([v for v,_,_ in parse_observations(payload,'07374527',dt.date(2024,9,11),dt.date(2024,9,11))],[3.2])
