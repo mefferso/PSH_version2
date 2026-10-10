@@ -89,11 +89,14 @@ def write_wind(sheet,r,rows,site,audit,default_url,details):
     return written
 
 def populate(wb,qc,start,end,counts,audit):
+    from cocorahs import rain_bounds
+    ra,rb=rain_bounds(start,end)
+    fetch_start=min(start,ra.date());fetch_end=max(end,rb.date())
     cache={}
     def get(site):
         sid=station_id(site)
         if sid not in cache:
-            try:cache[sid]=collect(sid,start,end)
+            try:cache[sid]=collect(sid,fetch_start,fetch_end)
             except requests.RequestException as e:cache[sid]=ValueError('IEM request failed: '+type(e).__name__)
             except ValueError as e:cache[sid]=e
         if isinstance(cache[sid],Exception):raise cache[sid]
@@ -105,7 +108,7 @@ def populate(wb,qc,start,end,counts,audit):
             try:
                 rows,url=get(st['id']);r=st['row']
                 if tab=='Wind and Pressure':
-                    n=write_wind(s,r,rows,st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
+                    n=write_wind(s,r,[x for x in rows if bounds(start,end)[0]<=x['time']<bounds(start,end)[1]],st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
                     status='REVIEW REQUIRED' if n else 'NO DATA';detail=f'{len(rows)} samples; {n}/3 variables; UTC window'
                 else:
                     from cocorahs import rain_bounds
