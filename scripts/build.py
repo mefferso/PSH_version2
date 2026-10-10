@@ -101,7 +101,7 @@ def build():
         csv.writer(fh).writerow(['site_id','usgs_site_number','peak_gage_height_ft',
             'peak_time_utc','datum','qualification','source_url'])
     for adapter in collectors():
-        if adapter in (cocorahs.populate,hads.populate,usgs.populate):
+        if adapter in (cocorahs.populate,hads.populate,usgs.populate,iem.populate):
             adapter(wb,qc,start,end,counts,audit,output_dir=OUT)
         else:
             adapter(wb,qc,start,end,counts,audit)
