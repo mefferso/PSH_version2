@@ -249,6 +249,8 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                     'requested_start_utc':a.isoformat(),'requested_end_utc':b.isoformat(),
                     'classification':'PARTIAL REPORT — NOT A VERIFIED STORM TOTAL',
                     'source_url':public_url(url)})
+        if value is None and sheet.cell(st['row'],8).value is not None:
+            status='INCOMPLETE — POPULATED'
         if error:detail+='; request/schema failure '+error+'; not evidence of absent historical observations'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,public_url(url)]);counts['cocorahs_'+status]+=1
 
