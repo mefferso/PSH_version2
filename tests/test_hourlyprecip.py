@@ -43,3 +43,27 @@ class IEMHourlyRainTests(unittest.TestCase):
         self.assertEqual(result['expected_hours'],3)
         self.assertEqual(result['observed_sum_inches'],1.0)
         self.assertEqual(result['missing_hours_utc'],['2026-10-08T01:00:00+00:00'])
+
+class CertifiedDryHourTests(unittest.TestCase):
+    def test_gap_covered_by_two_zero_hourly_metars_can_be_filled(self):
+        a=dt.datetime(2026,10,9,1,tzinfo=dt.timezone.utc)
+        b=a+dt.timedelta(hours=1)
+        rows=[
+          {'time':a+dt.timedelta(minutes=53),'rain':0.0,'report_type':3,'raw':{'metar':'KMSY RMK AO2'}},
+          {'time':b+dt.timedelta(minutes=53),'rain':0.0,'report_type':3,'raw':{'metar':'KMSY RMK AO2'}}]
+        self.assertTrue(hourlyprecip.certify_dry_hour(rows,a,b))
+        text='station,network,valid,precip_in\nMSY,LA_ASOS,2026-10-09 00:00,0.0\nMSY,LA_ASOS,2026-10-09 02:00,0.25\n'
+        total,count=hourlyprecip.recover_missing_dry_hours(text,'MSY','LA_ASOS',
+                   a-dt.timedelta(hours=1),b+dt.timedelta(hours=1),rows)
+        self.assertEqual(count,1)
+        self.assertAlmostEqual(total,0.25)
+
+    def test_pno_and_nonzero_metar_cannot_certify_dry_gap(self):
+        a=dt.datetime(2026,10,9,1,tzinfo=dt.timezone.utc)
+        rows=[
+          {'time':a+dt.timedelta(minutes=53),'rain':0.0,'report_type':3,'raw':{'metar':'KBTR RMK AO1 PNO'}},
+          {'time':a+dt.timedelta(hours=1,minutes=53),'rain':0.0,'report_type':3,'raw':{'metar':'KBTR RMK AO1 PNO'}}]
+        self.assertFalse(hourlyprecip.certify_dry_hour(rows,a,a+dt.timedelta(hours=1)))
+        for x in rows:x['raw']['metar']='KMSY RMK AO2'
+        rows[0]['rain']=0.02
+        self.assertFalse(hourlyprecip.certify_dry_hour(rows,a,a+dt.timedelta(hours=1)))
