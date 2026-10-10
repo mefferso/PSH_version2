@@ -115,6 +115,7 @@ def build():
     coverage(wb,qc,counts,audit)
     import observation_review
     observation_review.write(wb,audit,*bounds(start,end),a,b,OUT)
+    airport_fallback.write_inventory_audit(wb,OUT)
     products.summaries(wb)
     OUT.mkdir(parents=True,exist_ok=True)
     issues=products.export_csv(wb,OUT/'csv')
