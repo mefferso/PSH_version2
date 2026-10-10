@@ -1,4 +1,5 @@
 name: Audit airport rainfall gaps
+# Verify fixed CSV reconstruction against October 2026 archives.
 on:
   push:
     paths: ['.github/workflows/audit-airport-rain.yml']
