@@ -37,6 +37,8 @@ jobs:
           STORM_NAME: ${{ inputs.storm_name || 'Hurricane Ida' }}
           START_UTC: ${{ inputs.start_utc || '2021-08-28' }}
           END_UTC: ${{ inputs.end_utc || '2021-09-01' }}
+          RAIN_START_UTC: '2021-08-28T12:00:00Z'
+          RAIN_END_UTC: '2021-09-02T12:00:00Z'
           SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
           USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
         run: python scripts/build.py
