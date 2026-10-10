@@ -87,3 +87,24 @@ class USGSStageReviewTests(unittest.TestCase):
         rows=parse_stage_candidates(payload,'07374527',dt.date(2024,9,11),dt.date(2024,9,11))
         self.assertEqual([v for v,_ in rows],[12.5])
         self.assertEqual([v for v,_,_ in parse_observations(payload,'07374527',dt.date(2024,9,11),dt.date(2024,9,11))],[3.2])
+
+class USGSStageCSVTests(unittest.TestCase):
+    def test_exported_stage_csv_is_never_datum_qualified(self):
+        import csv,tempfile
+        from unittest.mock import patch
+        from openpyxl import load_workbook
+        import usgs
+        from collections import Counter
+        root=Path(__file__).resolve().parents[1]
+        w=load_workbook(root/'Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
+        with tempfile.TemporaryDirectory() as d:
+            with patch.object(usgs,'collect',return_value=(None,[])),patch.object(usgs,'stage_peak',
+                    return_value=(9.75,dt.datetime(2024,9,11,12,tzinfo=dt.timezone.utc))),patch.object(
+                    usgs,'parameter_evidence',return_value=None):
+                qc=[];counts=Counter()
+                usgs.populate(w,qc,dt.date(2024,9,11),dt.date(2024,9,11),output_dir=d)
+            with (Path(d)/'USGS_stage_review.csv').open() as file:
+                records=list(csv.DictReader(file))
+            self.assertTrue(records)
+            self.assertTrue(all('NOT NAVD88' in x['datum'] for x in records))
+            self.assertTrue(all(x['qualification']=='MANUAL DATUM REVIEW REQUIRED' for x in records))
