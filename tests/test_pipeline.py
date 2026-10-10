@@ -40,7 +40,7 @@ class PipelineTests(unittest.TestCase):
                             self.assertEqual(copy(getattr(x,attr)),copy(getattr(y,attr)))
                         self.assertEqual(x.hyperlink.target if x.hyperlink else None,y.hyperlink.target if y.hyperlink else None)
             payload=export_dashboard.export(out,site)
-            self.assertEqual(set(payload['tabs']),set(generated.sheetnames)|{'Provenance'})
+            self.assertEqual(set(payload['tabs']),set(generated.sheetnames)|{'Provenance','Marine Summary Review','Rainfall Archive Review'})
             self.assertTrue(payload['tabs']['Summary']['rows'])
             self.assertTrue((site/'review-outputs.zip').exists())
             self.assertEqual(len(payload['audit']),3)

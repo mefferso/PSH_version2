@@ -7,7 +7,7 @@ import time
 from urllib.parse import urlparse, parse_qs
 import requests
 from openpyxl.cell.cell import MergedCell
-from common import identifier, inventory
+from common import identifier, inventory, observation_now
 
 KNOTS_PER_MS = 1.9438444924406
 ALLOWED = {"BUOY", "CMAN", "C-MAN", "WLON", "NDBC"}
@@ -59,7 +59,7 @@ def parse_text(content, start, end):
                                  tzinfo=dt.timezone.utc)
         except (ValueError, KeyError, TypeError):
             continue
-        if not (start <= moment.date() <= end):
+        if not (start <= moment.date() <= end) or moment>=observation_now():
             continue
         def number(key, lo, hi):
             try:

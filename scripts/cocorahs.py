@@ -3,7 +3,7 @@ import datetime as dt
 import os
 import re
 import requests
-from common import inventory,finite,timestamp,interval_total,bounds,public_url
+from common import inventory,finite,timestamp,interval_total,bounds,public_url,elapsed_window
 
 URL='https://api2.cocorahs.org/api/DailyPrecipObs'
 
@@ -113,6 +113,7 @@ def observed_partial_sum(records,start,end):
     Prioritize covered time, not rainfall magnitude. Never split a daily
     measurement at storm boundaries or sum parallel overlapping reports.
     """
+    end=elapsed_window(start,end)
     values={}
     for r in records:
         a,b,v=r.get('start'),r.get('end'),r.get('value')
@@ -229,7 +230,7 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 amount=round(amount,2)
                 sheet.cell(st['row'],8).value=amount;sheet.cell(st['row'],9).value='I'
                 e=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,
-                    interval_start=a,status='INCOMPLETE',details=f'Observed subset {hours:.1f}/{(b-a).total_seconds()/3600:.1f} hours; missing time NOT estimated; '+detail)
+                    interval_start=a,status='INCOMPLETE',details=f'Observed subset {hours:.1f}/{(b-a).total_seconds()/3600:.1f} hours of requested window; unobserved periods NOT estimated; future reports are not missing; '+detail)
                 e['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
                 counts['cocorahs_incomplete_populated']+=1
             nearby=nearby_complete_total(records,a,b)

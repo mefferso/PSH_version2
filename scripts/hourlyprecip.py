@@ -9,7 +9,7 @@ import io
 from concurrent.futures import ThreadPoolExecutor
 import requests
 from cocorahs import rain_bounds
-from common import inventory,finite,interval_total,public_url
+from common import inventory,finite,interval_total,public_url,observation_now,elapsed_window
 
 URL='https://mesonet.agron.iastate.edu/cgi-bin/request/hourlyprecip.py'
 NETWORKS=('LA_ASOS','MS_ASOS')
@@ -24,7 +24,7 @@ def parse(text,station,network,start,end):
         if row.get('network')!=network:continue
         try: t=dt.datetime.strptime(row['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=dt.timezone.utc)
         except (TypeError,ValueError):continue
-        if not start<=t<end:continue
+        if not start<=t<end or t+dt.timedelta(hours=1)>observation_now():continue
         raw=finite(row.get('precip_in'),0,100)
         if raw is None:continue
         if raw==0.0001:trace_count+=1
@@ -42,19 +42,24 @@ def coverage_details(text,station,network,start,end):
         if str(row.get('station','')).upper()!=station.upper() or row.get('network')!=network:continue
         try:t=dt.datetime.strptime(row['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=dt.timezone.utc)
         except (ValueError,KeyError,TypeError):continue
-        if not start<=t<end:continue
+        if not start<=t<end or t+dt.timedelta(hours=1)>observation_now():continue
         v=finite(row.get('precip_in'),0,100)
         if v is None:continue
         if t in hours and hours[t]!=v:raise ValueError('Conflicting hourly values')
         hours[t]=v
-    expected=int((end-start).total_seconds()/3600)
+    elapsed_end=elapsed_window(start,end)
+    expected=int((elapsed_end-start).total_seconds()/3600)
     present=len(hours)
     missing=[(start+dt.timedelta(hours=i)).isoformat() for i in range(expected)
              if start+dt.timedelta(hours=i) not in hours]
     # Partial measured accumulation is a lower bound, never a 48h total.
     observed=sum(v for v in hours.values() if v!=0.0001)
     return {'observed_hours':present,'expected_hours':expected,
-            'missing_hours_utc':missing,'observed_sum_inches':round(observed,2)}
+            'missing_hours_utc':missing,'observed_sum_inches':round(observed,2),
+            'provisional':elapsed_end<end,'elapsed_end_utc':elapsed_end.isoformat(),
+            'first_observed_utc':min(hours).isoformat() if hours else None,
+            'last_observed_utc':(max(hours)+dt.timedelta(hours=1)).isoformat() if hours else None,
+            'observed_intervals':[{'start':t.isoformat(),'end':(t+dt.timedelta(hours=1)).isoformat(),'inches':v} for t,v in sorted(hours.items())]}
 
 def certify_dry_hour(metar_rows,start,end):
     """Prove an absent hour dry using overlapping zero-precip routine METARs.
@@ -150,7 +155,9 @@ def populate(wb,qc,start,end,counts,audit):
             amount=round(amount,2)
             sheet.cell(st['row'],8).value=amount
             sheet.cell(st['row'],9).value='I'
-            audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,interval_start=a,status='INCOMPLETE',details=detail)
+            entry=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,interval_start=a,status='INCOMPLETE',details=detail)
+            entry['observed_intervals']=info['observed_intervals']
+            entry['coverage']=info
             counts['iem_hourly_incomplete_populated']+=1
             status='INCOMPLETE — POPULATED'
         elif len(qualified)>1:

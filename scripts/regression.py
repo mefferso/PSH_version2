@@ -2,6 +2,7 @@
 import argparse
 import datetime as dt
 import json
+import math
 import os
 from pathlib import Path
 from collections import defaultdict
@@ -44,7 +45,7 @@ def compare(generated,reference):
                         status='DATUM MISMATCH';counts['discrepancies']+=1
                     else:
                         delta=actual-expected;counts['compared']+=1
-                        status='WITHIN TOLERANCE' if abs(delta)<=tolerance else 'DISCREPANCY'
+                        status='WITHIN TOLERANCE' if abs(delta)<=tolerance or math.isclose(abs(delta),tolerance,rel_tol=0,abs_tol=1e-12) else 'DISCREPANCY'
                         counts['within_tolerance' if status=='WITHIN TOLERANCE' else 'discrepancies']+=1
                 observations.append({'tab':tab,'site_id':st['id'],'variable':variable,'reference':expected,
                     'generated':actual,'difference':delta,'tolerance':tolerance,'status':status,'reference_url':st['url']})

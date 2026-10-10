@@ -1,0 +1,158 @@
+[
+  {
+    "site_id": "85750LA",
+    "series": "Chef_Pass_LA.Stage.Inst.15Minutes.0.rev",
+    "coverage": {
+      "peak": null,
+      "count": 0,
+      "first_utc": null,
+      "last_utc": null,
+      "expected_count": 220,
+      "missing_count": 220,
+      "conflicting_times": 0,
+      "complete": false,
+      "provisional": true,
+      "elapsed_end_utc": "2026-10-10T06:52:12.030960+00:00",
+      "sampling_interval_seconds": 900,
+      "requested_expected_count": 288,
+      "quality_codes": []
+    },
+    "errors": [],
+    "source_urls": [
+      "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=MVN&name=Chef_Pass_LA.Stage.Inst.15Minutes.0.rev&begin=2026-10-08T00%3A00%3A00%2B00%3A00&end=2026-10-11T00%3A00%3A00%2B00%3A00&units=ft&page-size=500"
+    ],
+    "catalog": {
+      "office": "MVN",
+      "name": "Chef_Pass_LA.Stage.Inst.15Minutes.0.rev",
+      "units": "m",
+      "interval": "15Minutes",
+      "interval-offset": 0,
+      "time-zone": "US/Central",
+      "extents": [
+        {
+          "earliest-time": "2022-01-19T00:30:00Z",
+          "latest-time": "2026-09-14T04:30:00Z",
+          "last-update": "2026-09-14T05:33:42.427333Z"
+        }
+      ],
+      "versioned": false
+    }
+  },
+  {
+    "site_id": "85667",
+    "series": "Walker_DS_FS.Stage.Inst.15Minutes.0.rev",
+    "coverage": {
+      "peak": null,
+      "count": 0,
+      "first_utc": null,
+      "last_utc": null,
+      "expected_count": 220,
+      "missing_count": 220,
+      "conflicting_times": 0,
+      "complete": false,
+      "provisional": true,
+      "elapsed_end_utc": "2026-10-10T06:52:12.865447+00:00",
+      "sampling_interval_seconds": 900,
+      "requested_expected_count": 288,
+      "quality_codes": []
+    },
+    "errors": [],
+    "source_urls": [
+      "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=MVN&name=Walker_DS_FS.Stage.Inst.15Minutes.0.rev&begin=2026-10-08T00%3A00%3A00%2B00%3A00&end=2026-10-11T00%3A00%3A00%2B00%3A00&units=ft&page-size=500"
+    ],
+    "catalog": {
+      "office": "MVN",
+      "name": "Walker_DS_FS.Stage.Inst.15Minutes.0.rev",
+      "units": "m",
+      "interval": "15Minutes",
+      "interval-offset": 0,
+      "time-zone": "US/Central",
+      "extents": [
+        {
+          "earliest-time": "2012-01-02T00:00:00Z",
+          "latest-time": "2026-09-14T04:45:00Z",
+          "last-update": "2026-09-14T05:36:40.327654Z"
+        }
+      ],
+      "versioned": false
+    }
+  },
+  {
+    "site_id": "CMPL1",
+    "series": "Chef_Menteur.Stage.Inst.1Hour.0.rev",
+    "coverage": {
+      "peak": null,
+      "count": 0,
+      "first_utc": null,
+      "last_utc": null,
+      "expected_count": 55,
+      "missing_count": 55,
+      "conflicting_times": 0,
+      "complete": false,
+      "provisional": true,
+      "elapsed_end_utc": "2026-10-10T06:52:13.325849+00:00",
+      "sampling_interval_seconds": 3600,
+      "requested_expected_count": 72,
+      "quality_codes": []
+    },
+    "errors": [],
+    "source_urls": [
+      "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=MVN&name=Chef_Menteur.Stage.Inst.1Hour.0.rev&begin=2026-10-08T00%3A00%3A00%2B00%3A00&end=2026-10-11T00%3A00%3A00%2B00%3A00&units=ft&page-size=500"
+    ],
+    "catalog": {
+      "office": "MVN",
+      "name": "Chef_Menteur.Stage.Inst.1Hour.0.rev",
+      "units": "m",
+      "interval": "1Hour",
+      "interval-offset": 0,
+      "time-zone": "US/Central",
+      "extents": [
+        {
+          "earliest-time": "1996-01-01T16:00:00Z",
+          "latest-time": "2024-02-20T18:00:00Z",
+          "last-update": "2026-09-14T05:34:35.279491Z"
+        }
+      ],
+      "versioned": false
+    }
+  },
+  {
+    "site_id": "LPML1",
+    "series": "Lake_Pon_Mandvil.Stage.Inst.1Hour.0.rev",
+    "coverage": {
+      "peak": null,
+      "count": 0,
+      "first_utc": null,
+      "last_utc": null,
+      "expected_count": 55,
+      "missing_count": 55,
+      "conflicting_times": 0,
+      "complete": false,
+      "provisional": true,
+      "elapsed_end_utc": "2026-10-10T06:52:13.778558+00:00",
+      "sampling_interval_seconds": 3600,
+      "requested_expected_count": 72,
+      "quality_codes": []
+    },
+    "errors": [],
+    "source_urls": [
+      "https://cwms-data.usace.army.mil/cwms-data/timeseries?office=MVN&name=Lake_Pon_Mandvil.Stage.Inst.1Hour.0.rev&begin=2026-10-08T00%3A00%3A00%2B00%3A00&end=2026-10-11T00%3A00%3A00%2B00%3A00&units=ft&page-size=500"
+    ],
+    "catalog": {
+      "office": "MVN",
+      "name": "Lake_Pon_Mandvil.Stage.Inst.1Hour.0.rev",
+      "units": "m",
+      "interval": "1Hour",
+      "interval-offset": 0,
+      "time-zone": "US/Central",
+      "extents": [
+        {
+          "earliest-time": "2006-10-26T15:00:00Z",
+          "latest-time": "2023-11-16T16:00:00Z",
+          "last-update": "2026-09-14T05:34:37.53275Z"
+        }
+      ],
+      "versioned": false
+    }
+  }
+]

@@ -16,7 +16,7 @@ from urllib.parse import quote
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from common import UTC, bounds, finite, inventory, public_url, timestamp
+from common import UTC, bounds, finite, inventory, public_url, timestamp, observation_now, elapsed_window
 
 BASE='https://cwms-data.usace.army.mil/cwms-data'
 MAPPING=Path(__file__).with_name('coastal_water_stations.json')
@@ -27,6 +27,9 @@ HEADERS=['Site ID','Network','Current station ID','CWMS series','Peak observed (
 FIELDS=['site_id','network','rivergages_sid','cwms_timeseries','peak_ft','peak_time_utc',
         'observed_datum','can_populate_psh','flag','observation_count','first_utc','last_utc',
         'expected_count','coverage_complete','human_review','reason','observation_url','source_url']
+
+HEADERS+=['Provisional event peak','Elapsed coverage end UTC','Actual source cadence (s)','Availability status']
+FIELDS+=['provisional','elapsed_end_utc','sampling_interval_seconds','availability_status']
 
 def load_mapping():
     rows=json.loads(MAPPING.read_text());mapping={r['site_id']:r for r in rows}
@@ -86,7 +89,18 @@ def parse_cwms(p,name,start,end):
                      'eligible':valid,'qualification':reason})
     return rows
 
-def summarize(rows,start,end,interval_seconds):
+def observed_cadence(rows):
+    # Infer an observed reporting lattice, never borrow CWMS cadence for HML.
+    times=sorted({timestamp(r['time_utc']) for r in rows})
+    differences=[int((b-a).total_seconds()) for a,b in zip(times,times[1:])]
+    if len(differences)<3:return None
+    cadence=min(differences)
+    if cadence<=0 or cadence>86400 or any(d%cadence for d in differences):return None
+    return cadence
+
+def summarize(rows,start,end,interval_seconds,as_of=None):
+    elapsed_end=elapsed_window(start,end,as_of)
+    rows=[r for r in rows if start<=timestamp(r['time_utc'])<elapsed_end]
     grouped=defaultdict(list)
     for row in rows:grouped[row['time_utc']].append(row)
     good=[];conflicts=0
@@ -96,14 +110,16 @@ def summarize(rows,start,end,interval_seconds):
         if same[0]['eligible']:good.append(same[0])
     good.sort(key=lambda r:r['time_utc'])
     peak=max(good,key=lambda r:r['value_ft']) if good else None
-    expected=math.ceil((end-start).total_seconds()/interval_seconds)
+    expected=math.ceil((elapsed_end-start).total_seconds()/interval_seconds) if interval_seconds else None
     # A count alone is insufficient: check every timestamp in the exact grid.
-    expected_times={(start+dt.timedelta(seconds=i*interval_seconds)).isoformat() for i in range(expected)}
+    expected_times={(start+dt.timedelta(seconds=i*interval_seconds)).isoformat() for i in range(expected or 0)}
     actual={r['time_utc'] for r in good}
     return {'peak':peak,'count':len(good),'first_utc':good[0]['time_utc'] if good else None,
             'last_utc':good[-1]['time_utc'] if good else None,'expected_count':expected,
-            'missing_count':len(expected_times-actual),'conflicting_times':conflicts,
-            'complete':actual==expected_times and not conflicts,
+            'missing_count':len(expected_times-actual) if interval_seconds else None,'conflicting_times':conflicts,
+            'complete':bool(expected) and actual==expected_times and not conflicts,
+            'provisional':elapsed_end<end,'elapsed_end_utc':elapsed_end.isoformat(),
+            'sampling_interval_seconds':interval_seconds,'requested_expected_count':math.ceil((end-start).total_seconds()/interval_seconds) if interval_seconds else None,
             'quality_codes':sorted({r['quality_code'] for r in rows if isinstance(r['quality_code'],int)})}
 
 def collect(m,start,end,session=None):
@@ -160,9 +176,9 @@ def collect_hml(m,start,end,session=None):
     except (requests.RequestException,ValueError) as exc:errors.append(type(exc).__name__+': HML retrieval/schema unavailable')
     finally:
         if own:s.close()
-    coverage=summarize(rows,start,end,m['interval_seconds'])
+    coverage=summarize(rows,start,end,observed_cadence(rows))
     # HML lacks source sampling/quality guarantees. Always mark review I.
-    coverage['complete']=False
+    if errors:coverage['complete']=False
     return {'observations':rows,'coverage':coverage,'source_urls':urls,'errors':errors,'pages':pages,
             'source_kind':'NWS HML archived by IEM (secondary)','datum_eligible':False}
 
@@ -234,9 +250,10 @@ def populate(wb,qc,start,end,counts,audit,output_dir=Path('output')):
         cov=result['coverage'];peak=cov['peak']
         report.update(observation_count=cov['count'],expected_count=cov['expected_count'],first_utc=cov['first_utc'],
                       last_utc=cov['last_utc'],missing_count=cov['missing_count'],coverage_complete=cov['complete'],
-                      quality_codes=cov['quality_codes'],conflicting_times=cov['conflicting_times'],errors=result['errors'],
+                      provisional=cov['provisional'],elapsed_end_utc=cov['elapsed_end_utc'],sampling_interval_seconds=cov['sampling_interval_seconds'],requested_expected_count=cov['requested_expected_count'],quality_codes=cov['quality_codes'],conflicting_times=cov['conflicting_times'],errors=result['errors'],
                       source_kind=result.get('source_kind','USACE MVN CWMS (primary)'),
                       source_url=result['source_urls'][0] if result['source_urls'] else m['historical_service'])
+        report['availability_status']='RETRIEVAL FAILURE' if result['errors'] else 'OBSERVATIONS AVAILABLE' if peak else 'HISTORIC-ONLY GAUGE; NO REQUESTED-PERIOD OBSERVATIONS' if st['id'] in ('CMPL1','LPML1') else 'NO OBSERVATIONS RETURNED; ACTIVE LISTING, SOURCE COVERAGE UNRESOLVED'
         if not peak:
             report['reason']='No eligible observed values in requested window. '+('; '.join(result['errors']) or m['notes'])
             status='NO DATA' if not result['errors'] else 'ERROR'
@@ -259,17 +276,17 @@ def populate(wb,qc,start,end,counts,audit,output_dir=Path('output')):
                 reason=f'Independently human-reviewed event-effective stage + {adjustment} ft conversion'
             report['observed_datum']=datum if qualified else ('NGVD29 stage' if st['id'] in ('BBOL1','TSPL1','BDAL1','BCSL1') else 'UNVERIFIED GAGE STAGE')
             coverage_note=f'{cov["count"]}/{cov["expected_count"]} expected observations; first {cov["first_utc"]}, last {cov["last_utc"]}; missing {cov["missing_count"]}; conflicts {cov["conflicting_times"]}'
-            report['reason']=reason+'; '+coverage_note+'; '+m['notes']
+            report['reason']=reason+'; '+coverage_note+'; '+m['notes']+('; PROVISIONAL peak: requested period has not ended; future observations are not missing' if cov['provisional'] else '')
             if qualified:
                 if finite(value,-100,100) is None:raise ValueError('Converted elevation outside QC range')
                 s=wb['Water Level'];r=st['row'];t=timestamp(peak['time_utc'])
                 s.cell(r,7).value=round(value,2);s.cell(r,8).value=datum
                 for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):s.cell(r,9+n).value=v
-                s.cell(r,14).value='I' if not cov['complete'] else None
+                s.cell(r,14).value='I' if not cov['complete'] or cov['provisional'] else None
                 audit.add('Water Level',r,st['id'],'water',round(value,2),'ft',t,report['source_url'],datum=datum,
                           evidence=evidence,raw_value=peak['original_value'],raw_unit=peak['original_unit'],details=report['reason'])
-                report.update(can_populate_psh=True,psh_value_ft=round(value,2),flag='I' if not cov['complete'] else '')
-                counts['coastal_water_psh_peaks']+=1;status='INCOMPLETE' if not cov['complete'] else 'REVIEW REQUIRED'
+                report.update(can_populate_psh=True,psh_value_ft=round(value,2),flag='I' if not cov['complete'] or cov['provisional'] else '')
+                counts['coastal_water_psh_peaks']+=1;status='INCOMPLETE' if not cov['complete'] else 'PROVISIONAL' if cov['provisional'] else 'REVIEW REQUIRED'
             else:status='DATUM REVIEW';counts['coastal_water_datum_review']+=1
         qc.append(['Water Level',st['id'],st['network'],status,report['reason'],report['source_url']]);reports.append(report)
     write_outputs(wb,output_dir,reports,observations)

@@ -111,6 +111,8 @@ def validate_site(out=Path('output'),site=Path('site')):
     files=[meta['workbook'],'QC.json','provenance.json','WeatherFlow-import-template.json','Rainfall_partial_reports.csv','USGS_stage_review.csv']+['csv/'+n for n in meta['csv_files']]
     from coastal_water import FILES
     files.extend(FILES)
+    from observation_review import FILES as REVIEW_FILES
+    files.extend(name for name in REVIEW_FILES if (out/name).exists())
     with zipfile.ZipFile(site/'review-outputs.zip') as z:
         if sorted(z.namelist())!=sorted(files):raise ValueError('Archive contains unrelated/missing files')
         for name in files:

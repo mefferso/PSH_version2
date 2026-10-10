@@ -11,6 +11,13 @@ from synoptic import partial_precip_from_reports
 UTC=dt.timezone.utc
 
 class PartialObservationPolicyTests(unittest.TestCase):
+    def setUp(self):
+        # These completed-event fixtures must not depend on today's date.
+        import os
+        from unittest.mock import patch
+        p=patch.dict(os.environ,PSH_AS_OF_UTC='2026-10-12T00:00:00Z')
+        p.start();self.addCleanup(p.stop)
+
     def test_discontinuous_reports_contribute_without_imputing_gaps(self):
         a=dt.datetime(2026,10,8,tzinfo=UTC); day=dt.timedelta(days=1)
         obs=[{'start':a,'end':a+day,'value':1.2},

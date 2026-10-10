@@ -1,0 +1,1289 @@
+{
+  "baseline_workflow": "https://github.com/mefferso/PSH_version2/actions/runs/38031186696",
+  "baseline_generated": "2026-10-10T06:35:56.019221+00:00",
+  "as_of_utc": "2026-10-10T07:02:21.564992+00:00",
+  "observation_start_utc": "2026-10-08T00:00:00+00:00",
+  "observation_end_utc": "2026-10-11T00:00:00+00:00",
+  "coastal_before": {
+    "observed": 27,
+    "qualified": 11
+  },
+  "coastal_after": {
+    "observed": 27,
+    "qualified": 13
+  },
+  "datum_review": [
+    "BSGL1",
+    "MBBL1",
+    "RGTL1",
+    "COCL1",
+    "01441",
+    "WCCL1",
+    "BBOL1",
+    "TSPL1",
+    "HPGL1",
+    "CKBL1",
+    "SWBL1",
+    "BDAL1",
+    "BCSL1",
+    "BCFL1"
+  ],
+  "no_observations": [
+    "85750LA",
+    "85667",
+    "CMPL1",
+    "LPML1"
+  ],
+  "coastal_raw_checks": [
+    {
+      "site_id": "BSGL1",
+      "peak_ft": 2.02,
+      "time_utc": "2026-10-08T01:15:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "LBWL1",
+      "peak_ft": 1.67,
+      "time_utc": "2026-10-08T00:15:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "SBEL1",
+      "peak_ft": 4.19,
+      "time_utc": "2026-10-09T20:30:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "MBBL1",
+      "peak_ft": 1.95,
+      "time_utc": "2026-10-08T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "RGTL1",
+      "peak_ft": 3.03,
+      "time_utc": "2026-10-10T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "76065",
+      "peak_ft": 3.87,
+      "time_utc": "2026-10-10T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "76062",
+      "peak_ft": 3.559999999999999,
+      "time_utc": "2026-10-10T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "85750LA",
+      "peak_ft": null,
+      "time_utc": null,
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "COCL1",
+      "peak_ft": 4.05,
+      "time_utc": "2026-10-10T04:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "01441",
+      "peak_ft": 1.5499999999999998,
+      "time_utc": "2026-10-10T05:15:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "WCCL1",
+      "peak_ft": 1.81,
+      "time_utc": "2026-10-08T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "BDBL1",
+      "peak_ft": 4.6899999999999995,
+      "time_utc": "2026-10-09T21:45:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "85667",
+      "peak_ft": null,
+      "time_utc": null,
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "BBOL1",
+      "peak_ft": 2.9599999999999995,
+      "time_utc": "2026-10-10T03:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "TSPL1",
+      "peak_ft": 4.39,
+      "time_utc": "2026-10-10T05:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "PRSL1",
+      "peak_ft": 3.58,
+      "time_utc": "2026-10-09T23:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "CMPL1",
+      "peak_ft": null,
+      "time_utc": null,
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "WEGL1",
+      "peak_ft": 3.33,
+      "time_utc": "2026-10-10T02:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "PLAL1",
+      "peak_ft": 3.5099999999999993,
+      "time_utc": "2026-10-10T02:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "SBNL1",
+      "peak_ft": 3.54,
+      "time_utc": "2026-10-10T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "MWBL1",
+      "peak_ft": 4.2,
+      "time_utc": "2026-10-09T20:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "VNCL1",
+      "peak_ft": 4.26,
+      "time_utc": "2026-10-09T21:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "HPGL1",
+      "peak_ft": 3.6499999999999995,
+      "time_utc": "2026-10-09T19:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "CKBL1",
+      "peak_ft": 3.66,
+      "time_utc": "2026-10-09T20:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "SWBL1",
+      "peak_ft": 3.5499999999999994,
+      "time_utc": "2026-10-09T23:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "WPHL1",
+      "peak_ft": 5.26,
+      "time_utc": "2026-10-09T21:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "BDAL1",
+      "peak_ft": 2.89,
+      "time_utc": "2026-10-09T07:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "BCSL1",
+      "peak_ft": 7.7799999999999985,
+      "time_utc": "2026-10-10T00:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "BCFL1",
+      "peak_ft": 3.7499999999999996,
+      "time_utc": "2026-10-10T01:00:00+00:00",
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "LPML1",
+      "peak_ft": null,
+      "time_utc": null,
+      "independent_raw_peak_matches": true
+    },
+    {
+      "site_id": "76305",
+      "peak_ft": 2.6399999999999997,
+      "time_utc": "2026-10-10T05:00:00+00:00",
+      "independent_raw_peak_matches": true
+    }
+  ],
+  "marine_top_winds": [
+    {
+      "row": 160,
+      "id": "PTBM6",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/PTBM6.txt",
+      "name": "Petit Bois Island",
+      "height_m": 4.6,
+      "averaging_minutes": 10.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=ptbm6; Current station configuration; historical epoch requires review",
+      "sustained_kn": 36.9,
+      "gust_kn": 52.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 4.6,
+        "site_elevation_msl_m": null,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=ptbm6",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 1,
+      "gust_rank": 1
+    },
+    {
+      "row": 162,
+      "id": "SHBL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/SHBL1.txt",
+      "name": "Shell Beach",
+      "height_m": 15.6,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=shbl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 31.1,
+      "gust_kn": 38.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 15.6,
+        "site_elevation_msl_m": 0,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=shbl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 2,
+      "gust_rank": 3
+    },
+    {
+      "row": 157,
+      "id": "NWCL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/NWCL1.txt",
+      "name": "New Canal",
+      "height_m": 11.6,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=nwcl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 29.0,
+      "gust_kn": 35.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.9,
+        "site_elevation_msl_m": 1.7,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=nwcl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 3,
+      "gust_rank": 6
+    },
+    {
+      "row": 156,
+      "id": "GISL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/GISL1.txt",
+      "name": "Grand Isle",
+      "height_m": 9.3,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=gisl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 28.0,
+      "gust_kn": 36.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 6.6,
+        "site_elevation_msl_m": 2.7,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=gisl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 4,
+      "gust_rank": 4
+    },
+    {
+      "row": 163,
+      "id": "WYCM6",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/WYCM6.txt",
+      "name": "Bay Waveland Yacht Club",
+      "height_m": 9.9,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=wycm6; Current station configuration; historical epoch requires review",
+      "sustained_kn": 27.0,
+      "gust_kn": 36.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.9,
+        "site_elevation_msl_m": 0,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=wycm6",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 5,
+      "gust_rank": 5
+    },
+    {
+      "row": 158,
+      "id": "PILL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/PILL1.txt",
+      "name": "Pilottown",
+      "height_m": 11.8,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=pill1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 25.1,
+      "gust_kn": 39.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.5,
+        "site_elevation_msl_m": 2.3,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=pill1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 6,
+      "gust_rank": 2
+    }
+  ],
+  "marine_top_gusts": [
+    {
+      "row": 160,
+      "id": "PTBM6",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/PTBM6.txt",
+      "name": "Petit Bois Island",
+      "height_m": 4.6,
+      "averaging_minutes": 10.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=ptbm6; Current station configuration; historical epoch requires review",
+      "sustained_kn": 36.9,
+      "gust_kn": 52.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 4.6,
+        "site_elevation_msl_m": null,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=ptbm6",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 1,
+      "gust_rank": 1
+    },
+    {
+      "row": 158,
+      "id": "PILL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/PILL1.txt",
+      "name": "Pilottown",
+      "height_m": 11.8,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=pill1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 25.1,
+      "gust_kn": 39.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.5,
+        "site_elevation_msl_m": 2.3,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=pill1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 6,
+      "gust_rank": 2
+    },
+    {
+      "row": 162,
+      "id": "SHBL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/SHBL1.txt",
+      "name": "Shell Beach",
+      "height_m": 15.6,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=shbl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 31.1,
+      "gust_kn": 38.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 15.6,
+        "site_elevation_msl_m": 0,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=shbl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 2,
+      "gust_rank": 3
+    },
+    {
+      "row": 156,
+      "id": "GISL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/GISL1.txt",
+      "name": "Grand Isle",
+      "height_m": 9.3,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=gisl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 28.0,
+      "gust_kn": 36.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 6.6,
+        "site_elevation_msl_m": 2.7,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=gisl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 4,
+      "gust_rank": 4
+    },
+    {
+      "row": 163,
+      "id": "WYCM6",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/WYCM6.txt",
+      "name": "Bay Waveland Yacht Club",
+      "height_m": 9.9,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=wycm6; Current station configuration; historical epoch requires review",
+      "sustained_kn": 27.0,
+      "gust_kn": 36.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.9,
+        "site_elevation_msl_m": 0,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=wycm6",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 5,
+      "gust_rank": 5
+    },
+    {
+      "row": 157,
+      "id": "NWCL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/NWCL1.txt",
+      "name": "New Canal",
+      "height_m": 11.6,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=nwcl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 29.0,
+      "gust_kn": 35.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 9.9,
+        "site_elevation_msl_m": 1.7,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=nwcl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": true,
+      "wind_reason": "Eligible marine workbook value; height below 20 m",
+      "gust_eligible": true,
+      "gust_reason": "Eligible marine workbook value; height below 20 m",
+      "wind_rank": 3,
+      "gust_rank": 6
+    }
+  ],
+  "marine_exclusions": [
+    {
+      "row": 146,
+      "id": "KDLP",
+      "network": "AWOS",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/KDLP.txt",
+      "name": "West Delta 27A",
+      "height_m": 34.7,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 147,
+      "id": "KIKT",
+      "network": "AWOS",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/KIKT.txt",
+      "name": "Mississippi Canyon 474",
+      "height_m": 124.0,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 148,
+      "id": "KVKY",
+      "network": "AWOS",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/KVKY.txt",
+      "name": "Main Pass 289C",
+      "height_m": 115.0,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 149,
+      "id": "KGLX",
+      "network": "AWOS",
+      "url": "https://aviationweather.gov/data/metar/?id=KGLX&hours=24&tabular=yes",
+      "name": "Mississippi Canyon 724",
+      "height_m": null,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://tgftp.nws.noaa.gov/weather/current/KGLX.html; UNRESOLVED; no automatic Summary eligibility",
+      "sustained_kn": 35.0,
+      "gust_kn": 40.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": null,
+        "source": "https://tgftp.nws.noaa.gov/weather/current/KGLX.html",
+        "verified_date": "2026-10-10",
+        "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+        "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+      },
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height unresolved; review required",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height unresolved; review required"
+    },
+    {
+      "row": 150,
+      "id": "KMTK",
+      "network": "AWOS",
+      "url": "https://aviationweather.gov/data/metar/?id=KMTK&hours=96&tabular=yes",
+      "name": "South Pass 89E",
+      "height_m": 49.9,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": 32.0,
+      "gust_kn": 40.0,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 151,
+      "id": "KPZZ",
+      "network": "AWOS",
+      "url": "https://www.weather.gov/wrh/timeseries?site=KPZZ",
+      "name": "Ship Shoal 241",
+      "height_m": 25.0,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": 60.0,
+      "gust_kn": 50.0,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 152,
+      "id": "KCYD",
+      "network": "AWOS",
+      "url": "https://aviationweather.gov/data/metar/?id=KCYD&hours=24&tabular=yes",
+      "name": "Mississippi Canyon 807",
+      "height_m": null,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://tgftp.nws.noaa.gov/weather/current/KCYD.html; UNRESOLVED; no automatic Summary eligibility",
+      "sustained_kn": 61.0,
+      "gust_kn": 66.0,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": null,
+        "source": "https://tgftp.nws.noaa.gov/weather/current/KCYD.html",
+        "verified_date": "2026-10-10",
+        "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+        "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+      },
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height unresolved; review required",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height unresolved; review required"
+    },
+    {
+      "row": 153,
+      "id": "42040",
+      "network": "Buoy",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/42040.txt",
+      "name": "Luke Offshore Platform",
+      "height_m": 4.1,
+      "averaging_minutes": 1.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 154,
+      "id": "BURL1",
+      "network": "CMAN",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/BURL1.txt",
+      "name": "Southwest Pass",
+      "height_m": 38.0,
+      "averaging_minutes": 10.0,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/station_page.php?station=burl1; Current station configuration; historical epoch requires review",
+      "sustained_kn": 41.0,
+      "gust_kn": 46.1,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": 38,
+        "site_elevation_msl_m": 0,
+        "source": "https://www.ndbc.noaa.gov/station_page.php?station=burl1",
+        "verified_date": "2026-10-10",
+        "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+        "applies_to": "Current station configuration; historical epoch requires review"
+      },
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 155,
+      "id": "BYGL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/BYGL1.txt",
+      "name": "Bayou Gauche",
+      "height_m": 30.8,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 159,
+      "id": "PSTL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/PSTL1.txt",
+      "name": "Pilot's Station East",
+      "height_m": 23.9,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": 49.0,
+      "gust_kn": 56.0,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 161,
+      "id": "PTFL1",
+      "network": "WLON",
+      "url": "https://www.ndbc.noaa.gov/station_page.php?station=ptfl1",
+      "name": "Port Fourchon, Belle Pass",
+      "height_m": null,
+      "averaging_minutes": null,
+      "height_basis": "existing station template; event-specific metadata review required; https://www.ndbc.noaa.gov/faq/bmanht.shtml; UNRESOLVED; no automatic Summary eligibility",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": {
+        "official_height_above_site_m": null,
+        "source": "https://www.ndbc.noaa.gov/faq/bmanht.shtml",
+        "verified_date": "2026-10-10",
+        "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+        "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+      },
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height unresolved; review required",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height unresolved; review required"
+    },
+    {
+      "row": 164,
+      "id": "LOPL1",
+      "network": "",
+      "url": "https://www.ndbc.noaa.gov/data/realtime2/LOPL1.txt",
+      "name": "Louisiana Offshore Oil Port",
+      "height_m": 57.9,
+      "averaging_minutes": 2.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "Anemometer height >=20 m; excluded by Summary footnote",
+      "gust_eligible": false,
+      "gust_reason": "Anemometer height >=20 m; excluded by Summary footnote"
+    },
+    {
+      "row": 165,
+      "id": "LUML1",
+      "network": "",
+      "url": "https://www.ndbc.noaa.gov/station_page.php?station=luml1",
+      "name": "Lumcon Lab",
+      "height_m": 14.2,
+      "averaging_minutes": 0.05,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 166,
+      "id": "TRBL1",
+      "network": "",
+      "url": "https://www.ndbc.noaa.gov/station_page.php?station=trbl1",
+      "name": "Terrebonne Bay",
+      "height_m": 16.9,
+      "averaging_minutes": 0.05,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 167,
+      "id": "XPTN",
+      "network": "WeatherFlow",
+      "url": "https://ds.weatherflow.com/map",
+      "name": "Mid Lake Pontchartrain",
+      "height_m": 12.5,
+      "averaging_minutes": 1.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 168,
+      "id": "XSHI",
+      "network": "WeatherFlow",
+      "url": "https://ds.weatherflow.com/map",
+      "name": "Ship Island",
+      "height_m": 11.8,
+      "averaging_minutes": 1.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 169,
+      "id": "XEBT",
+      "network": "WeatherFlow",
+      "url": "https://ds.weatherflow.com/map",
+      "name": "East Bay Tower",
+      "height_m": 15.2,
+      "averaging_minutes": 1.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    },
+    {
+      "row": 170,
+      "id": "TWS641430",
+      "network": "WeatherFlow",
+      "url": "https://ds.weatherflow.com/map",
+      "name": "Chef Menteur Hwy - Rigolets",
+      "height_m": 6.4,
+      "averaging_minutes": 1.0,
+      "height_basis": "existing station template; event-specific metadata review required",
+      "sustained_kn": null,
+      "gust_kn": null,
+      "human_review": true,
+      "official_height_evidence": null,
+      "wind_eligible": false,
+      "wind_reason": "No qualified wind measurement; source availability/collector QC in station QC",
+      "gust_eligible": false,
+      "gust_reason": "No qualified gust measurement; source availability/collector QC in station QC"
+    }
+  ],
+  "rainfall_before": {
+    "rows": 70,
+    "positive": 3
+  },
+  "rainfall_after": {
+    "rows": 43,
+    "positive": 3
+  },
+  "rainfall_rows": [
+    {
+      "site_id": "BTR",
+      "network": "ASOS",
+      "row": 2,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "MSY",
+      "network": "ASOS",
+      "row": 3,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "NEW",
+      "network": "ASOS",
+      "row": 4,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "ASD",
+      "network": "ASOS",
+      "row": 5,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "BIX",
+      "network": "ASOS",
+      "row": 6,
+      "before": 0.01,
+      "after": 0.01,
+      "flag": "I"
+    },
+    {
+      "site_id": "GPT",
+      "network": "ASOS",
+      "row": 7,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "PQL",
+      "network": "ASOS",
+      "row": 8,
+      "before": 0.1,
+      "after": 0.1,
+      "flag": "I"
+    },
+    {
+      "site_id": "MCB",
+      "network": "ASOS",
+      "row": 9,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "NBG",
+      "network": "AWOS",
+      "row": 11,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "APS",
+      "network": "AWOS",
+      "row": 12,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "BXA",
+      "network": "AWOS",
+      "row": 13,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "DCHL1",
+      "network": "COOP",
+      "row": 14,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "DVLL1",
+      "network": "COOP",
+      "row": 16,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "OLVL1",
+      "network": "COOP",
+      "row": 19,
+      "before": null,
+      "after": 0.01,
+      "flag": "I"
+    },
+    {
+      "site_id": "THIL1",
+      "network": "COOP",
+      "row": 22,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "PVLL1",
+      "network": "COOP",
+      "row": 24,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "SISL1",
+      "network": "COOP",
+      "row": 30,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "PTAL1",
+      "network": "COOP",
+      "row": 33,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "SFLL1",
+      "network": "COOP",
+      "row": 34,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "GLOM6",
+      "network": "COOP",
+      "row": 35,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "ABKL1",
+      "network": "HADS",
+      "row": 40,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "BLBL1",
+      "network": "HADS",
+      "row": 42,
+      "before": null,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CONL1",
+      "network": "HADS",
+      "row": 43,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "PANL1",
+      "network": "HADS",
+      "row": 48,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "WGPL1",
+      "network": "HADS",
+      "row": 49,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CBAL1",
+      "network": "HADS",
+      "row": 52,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CMTL1",
+      "network": "HADS",
+      "row": 53,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "COML1",
+      "network": "HADS",
+      "row": 54,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "JCHL1",
+      "network": "HADS",
+      "row": 57,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "WBHL1",
+      "network": "HADS",
+      "row": 61,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "WCEL1",
+      "network": "HADS",
+      "row": 62,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "FSLL1",
+      "network": "HADS",
+      "row": 65,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "MAUL1",
+      "network": "HADS",
+      "row": 66,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "BSHL1",
+      "network": "HADS",
+      "row": 73,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CGSL1",
+      "network": "HADS",
+      "row": 74,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CUSL1",
+      "network": "HADS",
+      "row": 75,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CVEL1",
+      "network": "HADS",
+      "row": 76,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "MSVL1",
+      "network": "HADS",
+      "row": 77,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "KENL1",
+      "network": "HADS",
+      "row": 81,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "FRNL1",
+      "network": "HADS",
+      "row": 84,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "MPAM6",
+      "network": "HADS",
+      "row": 91,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "OSYM6",
+      "network": "HADS",
+      "row": 92,
+      "before": 0,
+      "after": 0.0,
+      "flag": "I"
+    },
+    {
+      "site_id": "CKWM6",
+      "network": "RAWS",
+      "row": 94,
+      "before": null,
+      "after": 0.0,
+      "flag": "I"
+    }
+  ],
+  "rainfall_archive_review": {
+    "stations": 41,
+    "reports": 71,
+    "combined_stations_with_measurements": 84,
+    "positive_individual_reports": [
+      {
+        "site_id": "LA-JF-05",
+        "source_date": "2026-10-09",
+        "reported_inches": 0.01
+      }
+    ],
+    "can_populate_psh": false
+  }
+}
