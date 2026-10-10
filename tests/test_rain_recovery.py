@@ -127,3 +127,25 @@ class DefaultOperationalRainWindowTests(unittest.TestCase):
             a,b=cocorahs.rain_bounds(dt.date(2024,9,10),dt.date(2024,9,12))
         self.assertEqual(a.hour,6)
         self.assertEqual(b.hour,18)
+
+class NearbyCompleteWindowReviewTests(unittest.TestCase):
+    def test_nearby_contiguous_daily_reports_can_be_reviewed_but_not_exact(self):
+        from cocorahs import nearby_complete_total, export_total
+        a=dt.datetime(2026,10,8,tzinfo=UTC)
+        b=a+dt.timedelta(days=2)
+        shifted=a+dt.timedelta(hours=1)
+        rows=[
+            {'start':shifted,'end':shifted+dt.timedelta(days=1),'value':1.25},
+            {'start':shifted+dt.timedelta(days=1),'end':b+dt.timedelta(hours=1),'value':2.50}]
+        self.assertIsNone(export_total(rows,a,b))
+        candidate=nearby_complete_total(rows,a,b)
+        self.assertEqual(candidate,(3.75,shifted,b+dt.timedelta(hours=1)))
+
+    def test_missing_day_or_outside_tolerance_cannot_claim_nearby_total(self):
+        from cocorahs import nearby_complete_total
+        a=dt.datetime(2026,10,8,tzinfo=UTC)
+        b=a+dt.timedelta(days=2)
+        rows=[{'start':a+dt.timedelta(hours=1),'end':a+dt.timedelta(days=1,hours=1),'value':1.0}]
+        self.assertIsNone(nearby_complete_total(rows,a,b))
+        rows=[{'start':a+dt.timedelta(hours=3),'end':b+dt.timedelta(hours=3),'value':5.0}]
+        self.assertIsNone(nearby_complete_total(rows,a,b))
