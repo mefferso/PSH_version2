@@ -16,7 +16,7 @@ TEMPLATE=Path('Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
 OUT=Path('output')
 
 def collectors():
-    return [iem.populate,asos1min.populate,hourlyprecip.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
+    return [hourlyprecip.populate,iem.populate,asos1min.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
             weatherstem.populate,cocorahs.populate,hads.populate,coopobs.populate,synoptic.populate_rain,tornadoes.populate,datums.populate]
 
 def reset(wb):
