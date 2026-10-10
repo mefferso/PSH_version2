@@ -1,5 +1,5 @@
 name: One-time PSH observed-data policy release
-# Retry after fixing duplicate ASOS source provenance.
+# Retry after restoring qualified Synoptic totals alongside incomplete fallbacks.
 on:
   push:
     paths: ['.github/workflows/observed-data-release.yml']
