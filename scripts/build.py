@@ -10,6 +10,7 @@ from openpyxl.cell.cell import MergedCell
 from openpyxl.styles import Font,PatternFill
 from common import Audit,inventory,bounds
 from cocorahs import rain_bounds
+import coastal_water
 import asos1min,iem,hourlyprecip,coopobs,coops,ndbc,usgs,usace,synoptic,weatherstem,cocorahs,hads,tornadoes,imports,products,datums
 
 TEMPLATE=Path('Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
@@ -17,7 +18,7 @@ OUT=Path('output')
 
 def collectors():
     return [hourlyprecip.populate,asos1min.populate,iem.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
-            weatherstem.populate,cocorahs.populate,synoptic.populate_rain,hads.populate,coopobs.populate,tornadoes.populate,datums.populate]
+            weatherstem.populate,cocorahs.populate,synoptic.populate_rain,hads.populate,coopobs.populate,tornadoes.populate,coastal_water.populate]
 
 def reset(wb):
     for tab,cols in [('Wind and Pressure',range(11,31)),('Rainfall',range(8,10)),('Water Level',[7,9,10,11,12,14])]:
@@ -100,12 +101,12 @@ def build():
     with (OUT/'USGS_stage_review.csv').open('w',newline='',encoding='utf-8') as fh:
         csv.writer(fh).writerow(['site_id','usgs_site_number','peak_gage_height_ft',
             'peak_time_utc','datum','qualification','source_url'])
+    coastal_water.write_outputs(wb,OUT,[],{})
     for adapter in collectors():
-        if adapter in (cocorahs.populate,hads.populate,coopobs.populate,usgs.populate,iem.populate):
+        if adapter in (cocorahs.populate,hads.populate,coopobs.populate,usgs.populate,iem.populate,coastal_water.populate):
             adapter(wb,qc,start,end,counts,audit,output_dir=OUT)
         else:
             adapter(wb,qc,start,end,counts,audit)
-    if os.environ.get('PSH_OFFLINE')!='1':usace.populate(wb,qc,start,end,counts)
     if os.environ.get('PSH_IMPORT_FILE'):imports.load(wb,os.environ['PSH_IMPORT_FILE'],start,end,audit)
     coverage(wb,qc,counts,audit)
     products.summaries(wb)
@@ -119,7 +120,8 @@ def build():
     imports.template(wb,OUT/'WeatherFlow-import-template.json');audit.save(OUT/'provenance.json')
     import hashlib
     statuses=Counter(str(qc.cell(r,4).value) for r in range(2,qc.max_row+1))
-    report={'storm':name,'start_utc':str(start),'end_utc':str(end),'rain_start_utc':a.isoformat(),'rain_end_utc':b.isoformat(),
+    observation_start,observation_end=bounds(start,end)
+    report={'observation_start_utc':observation_start.isoformat(),'observation_end_utc':observation_end.isoformat(),'storm':name,'start_utc':str(start),'end_utc':str(end),'rain_start_utc':a.isoformat(),'rain_end_utc':b.isoformat(),
             'generated_at_utc':dt.datetime.now(dt.timezone.utc).isoformat(),'coverage':'DEVELOPMENT REVIEW — incomplete source coverage',
             'csv_files':products.CSV_FILES,'workbook':target.name,'measurement_count':len(audit.entries),'counts':dict(counts),'qc_status_counts':dict(statuses),
             'manual_networks':['WeatherFlow'],'csv_kind':'REVIEW and CANDIDATE — NWSI 10-601 (2026-08-17) thresholds; not official issuance',

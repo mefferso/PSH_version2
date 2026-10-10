@@ -66,3 +66,41 @@ python scripts/regression.py output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx
 Tolerance: wind/gust 1 kt, pressure 0.5 mb, rainfall 0.12 inches, water 0.15 feet. Missing and ambiguous readings are counted separately, never as agreement. Do not widen tolerances to hide source differences. See [validation records](docs/validation/) for actual live results and unresolved discrepancies.
 
 `SYNOPTIC_TOKEN` is an Actions secret confirmed by the repository owner. No secrets are committed or included in URLs. It need not be present in the cloud shell; credentialed validation runs in Actions. Saved cloud setup instructions reproduce the dependency installation and checks; changes to that environment draft require publication in environment settings for future tasks.
+
+### CPRA / USACE historical water recovery
+
+The 31 affected Water Level rows use exact mappings in
+`scripts/coastal_water_stations.json` and the official USACE MVN CWMS historical
+JSON API. The original station IDs, names, coordinates and formats are retained;
+only the 31 verified observation hyperlinks are changed. WCCL1 maps to the
+flood-side gauge 76265 (`WestCC _FS`, including its embedded space). Distinct
+flood/protected sides and old/hardened gauges are never substituted.
+
+Available observed peaks survive partial coverage. Qualified direct NAVD88
+measurements populate the existing PSH fields; incomplete coverage receives I.
+Unknown/incompatible datum and identity conflicts remain in **Water Level Review**,
+`coastal_water_review.csv`, and the website Water Level tab's explicitly labeled
+review columns. Every returned source observation, quality code and original
+value/unit is retained in `coastal_water_observations.json`; station audit records
+are in `coastal_water_audit.json`. The existing independently reviewed,
+event-effective datum registry remains available; no offsets are auto-approved.
+An exact original NWS ID can fall back to the secondary IEM HML observation
+archive when CWMS has no eligible peak; such stage is always review-only.
+
+[The live Isaias audit](docs/validation/isaias-20261008-10/station-audit.md)
+records 27 retrieved peaks, 11 PSH-qualified peaks and four rows with no retrieved
+observations for **2026-10-08T00:00:00Z to 2026-10-10T00:00:00Z (exclusive end)**.
+Raw evidence and the regenerated workbook are included in that directory's
+review package. A retrieved stage is not automatically a verified elevation or
+an official PSH reporting decision.
+
+After merge, select **Actions → Build PSH workbook → Run workflow → main**.
+For this case use storm_name `Hurricane Isaias`, start_utc `2026-10-08`, and
+end_utc `2026-10-09` (inclusive date). The manifest records exact observation
+bounds; rainfall retains its separately documented window unless both rainfall
+overrides are provided. Main pushes and PRs run tests. Only an explicit dispatch
+on main collects and deploys; branch dispatches cannot publish. The operational
+job validates the workbook and exported site, deploys Pages, then verifies the
+public manifest, Water Level tab and coastal review download against the local
+validated export. Confirm the **Verify deployed Water Level tab and station
+review** step succeeds after merge. This PR does not publish the updated site.

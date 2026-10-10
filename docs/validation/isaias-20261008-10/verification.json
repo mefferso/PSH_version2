@@ -1,0 +1,29 @@
+{
+  "test_command": "python -m unittest discover -s tests -v",
+  "tests_run": 122,
+  "result": "OK",
+  "duration_seconds": 130.311,
+  "live_pipeline_command": "STORM_NAME=\"Hurricane Isaias\" START_UTC=2026-10-08 END_UTC=2026-10-09 python scripts/build.py",
+  "live_pipeline_result": "success",
+  "validation_commands": [
+    "python scripts/validate.py",
+    "python scripts/export_dashboard.py",
+    "python scripts/validate.py --site"
+  ],
+  "validation_result": "success",
+  "auditable_measurements": 315,
+  "affected_stations": 31,
+  "observed_peaks": 27,
+  "psh_qualified_peaks": 11,
+  "review_only_peaks": 16,
+  "no_observations": [
+    "85750LA",
+    "85667",
+    "CMPL1",
+    "LPML1"
+  ],
+  "updated_links_verified": 31,
+  "published_during_pr_testing": false,
+  "production_verification": "Pending merge and main workflow_dispatch; post-deployment equality check added to operational workflow",
+  "review_package_sha256": "adcdb8e939bc8f7abf2cbd574f0c0ceec6974447447a0266cdd3709165c999b7"
+}

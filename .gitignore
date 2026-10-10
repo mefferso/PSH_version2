@@ -10,3 +10,6 @@ site/.nojekyll
 
 node_modules/
 site/WeatherFlow-import-template.json
+
+work/
+site/coastal_water_*.json
