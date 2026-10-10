@@ -1,0 +1,62 @@
+name: Francine WeatherSTEM historical verification
+on:
+  push:
+    branches:
+      - validation/francine-weatherstem-20261010
+    paths:
+      - '.github/workflows/francine-weatherstem-validation.yml'
+jobs:
+  historical-review:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.lock.txt
+      - name: Collect Hurricane Francine 2024 without publishing
+        env:
+          STORM_NAME: Hurricane Francine
+          START_UTC: '2024-09-10'
+          END_UTC: '2024-09-12'
+          RAIN_START_UTC: '2024-09-10T12:00:00Z'
+          RAIN_END_UTC: '2024-09-12T12:00:00Z'
+          SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
+          USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
+        run: python scripts/build.py
+      - run: python scripts/validate.py
+      - name: Compare Francine against issued report
+        run: python scripts/regression.py output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx
+      - name: Summarize exact WeatherSTEM observations
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from openpyxl import load_workbook
+          from sys import path
+          path.insert(0,'scripts')
+          from common import inventory
+          w=load_workbook('output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx',data_only=True)
+          a=json.loads(Path('output/provenance.json').read_text())
+          rows=[]
+          for st in inventory(w,'Wind and Pressure'):
+              if st['network']!='WeatherSTEM':continue
+              r=st['row']
+              entries=[x for x in a if x['tab']=='Wind and Pressure' and x['site_id']==st['id']]
+              rows.append({'id':st['id'],'wind_kn':w['Wind and Pressure'].cell(r,11).value,
+                           'gust_kn':w['Wind and Pressure'].cell(r,17).value,
+                           'wind_time_utc':next((x['time_utc'] for x in entries if x['variable']=='wind'),None),
+                           'gust_time_utc':next((x['time_utc'] for x in entries if x['variable']=='gust'),None),
+                           'qc':next((x['details'] for x in entries if x['variable']=='wind'),None)})
+          Path('output/WeatherSTEM-Francine-stations.json').write_text(json.dumps(rows,indent=2))
+          print('WeatherSTEM stations',len(rows),'wind',sum(x['wind_kn'] is not None for x in rows),'gust',sum(x['gust_kn'] is not None for x in rows))
+          for x in rows:print(x['id'],x['wind_kn'],x['gust_kn'])
+          PY
+      - name: Upload historical workbook and audit, even if collection fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: francine-weatherstem-validation
+          path: output/
+          if-no-files-found: warn
