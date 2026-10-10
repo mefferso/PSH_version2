@@ -107,7 +107,7 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
 
     # Append candidates to the shared rainfall-partials CSV written by CoCoRaHS.
     if partial:
-        target=(Path(output_dir) if output_dir is not None else Path('output'))/'CoCoRaHS_partial_reports.csv'
+        target=(Path(output_dir) if output_dir is not None else Path('output'))/'Rainfall_partial_reports.csv'
         with target.open('a',newline='',encoding='utf-8') as fh:
             writer=csv.DictWriter(fh,fieldnames=['station_id','report_type','period_start_utc',
                 'period_end_utc','reported_in','requested_start_utc','requested_end_utc',
