@@ -1,4 +1,5 @@
 name: PSH operational acceptance
+# Recheck nearby continuous gauge intervals after coverage improvements.
 # Independent historical run: validate archive rain recovery and review exports.
 on:
   push:
