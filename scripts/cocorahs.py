@@ -193,8 +193,8 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
     # Deliberately no arithmetic sum across partial/overlapping intervals.
     target=(Path(output_dir) if output_dir is not None else Path('output'))/'Rainfall_partial_reports.csv'
     target.parent.mkdir(parents=True,exist_ok=True)
-    with target.open('w',newline='',encoding='utf-8') as fh:
+    with target.open('a',newline='',encoding='utf-8') as fh:
         fields=['station_id','report_type','period_start_utc','period_end_utc','reported_in',
                 'requested_start_utc','requested_end_utc','classification','source_url']
-        writer=csv.DictWriter(fh,fieldnames=fields);writer.writeheader();writer.writerows(partial)
+        writer=csv.DictWriter(fh,fieldnames=fields);writer.writerows(partial)
     counts['cocorahs_partial_reports']=len(partial)
