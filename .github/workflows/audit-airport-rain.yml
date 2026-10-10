@@ -30,5 +30,10 @@ jobs:
                       summary=hourlyprecip.coverage_details(r.text,sid,network,a,b)
                       print('SUMMARY',sid,summary)
                       print('TOTAL',sid,hourlyprecip.parse(r.text,sid,network,a,b)[0])
+                      if sid in ('MSY','BTR','BIX','PQL'):
+                          try:
+                              rows,url=iem.collect(sid,dt.date(2026,10,9),dt.date(2026,10,9))
+                              print('METAR_MISSING_HOUR',sid,[(x['time'].isoformat(),x.get('rain'),x.get('report_type'),str(x.get('raw',{}).get('metar',''))[:110]) for x in rows if dt.datetime(2026,10,9,0,tzinfo=dt.timezone.utc)<=x['time']<=dt.datetime(2026,10,9,3,tzinfo=dt.timezone.utc)][:18])
+                          except Exception as e:print('METAR_ERROR',sid,str(e)[:180])
                   except Exception as e:print('ERROR',sid,type(e).__name__,str(e)[:180])
           PY
