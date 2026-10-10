@@ -102,7 +102,7 @@ class USGSStageCSVTests(unittest.TestCase):
                     return_value=(9.75,dt.datetime(2024,9,11,12,tzinfo=dt.timezone.utc))),patch.object(
                     usgs,'parameter_evidence',return_value=None):
                 qc=[];counts=Counter()
-                usgs.populate(w,qc,dt.date(2024,9,11),dt.date(2024,9,11),output_dir=d)
+                usgs.populate(w,qc,dt.date(2024,9,11),dt.date(2024,9,11),counts,output_dir=d)
             with (Path(d)/'USGS_stage_review.csv').open() as file:
                 records=list(csv.DictReader(file))
             self.assertTrue(records)
