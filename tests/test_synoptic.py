@@ -44,3 +44,32 @@ class InternalWindQCTests(unittest.TestCase):
         data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s'},'STATION':[{'STID':'F8544','OBSERVATIONS':{'date_time':['2024-09-11T23:35:00Z'],'wind_speed_set_1':[28.166],'wind_gust_set_1':[3.575]}}]}
         rows=synoptic.parse(data,'F8544',dt.date(2024,9,11),dt.date(2024,9,11))
         self.assertIsNone(rows[0]['gust']);self.assertTrue(rows[0]['wind_qc'])
+
+class CWOPConventionalWindTests(unittest.TestCase):
+    def test_cwop_missing_period_is_reviewable_nominal_one_minute(self):
+        data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s'},
+              'STATION':[{'STID':'AV585','OBSERVATIONS':{
+                  'date_time':['2026-10-09T21:05:00Z'],
+                  'wind_speed_set_1':[4.916],
+                  'wind_gust_set_1':[12.517]}}]}
+        start=end=dt.date(2026,10,9)
+        cwop=synoptic.parse(data,'AV585',start,end,network='CWOP')[0]
+        self.assertAlmostEqual(cwop['wind'],9.556,places=2)
+        self.assertEqual(cwop['wind_averaging_period_minutes'],1)
+        self.assertIn('unverified',cwop['wind_period_basis'])
+        self.assertIsNone(cwop['gust_dir'])
+        self.assertIsNone(synoptic.parse(data,'AV585',start,end,network='RAWS')[0]['wind'])
+        self.assertIsNone(synoptic.parse(data,'AV585',start,end)[0]['wind'])
+
+    def test_explicit_period_wins_and_invalid_period_is_not_inferred(self):
+        data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s'},
+              'STATION':[{'STID':'AV585','SENSOR_VARIABLES':{'wind_speed':{
+                  'wind_speed_set_1':{'averaging_period_minutes':2}}},
+                  'OBSERVATIONS':{'date_time':['2026-10-09T21:05:00Z'],
+                  'wind_speed_set_1':[4]}}]}
+        row=synoptic.parse(data,'AV585',dt.date(2026,10,9),dt.date(2026,10,9),network='CWOP')[0]
+        self.assertEqual(row['wind_averaging_period_minutes'],2)
+        self.assertIn('explicit',row['wind_period_basis'])
+        data['STATION'][0]['SENSOR_VARIABLES']['wind_speed']['wind_speed_set_1']['averaging_period_minutes']=5
+        row=synoptic.parse(data,'AV585',dt.date(2026,10,9),dt.date(2026,10,9),network='CWOP')[0]
+        self.assertIsNone(row['wind'])
