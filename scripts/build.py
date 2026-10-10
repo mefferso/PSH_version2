@@ -93,7 +93,7 @@ def build():
     # builds whose mocked collector list intentionally omits CoCoRaHS.
     import csv
     OUT.mkdir(parents=True,exist_ok=True)
-    with (OUT/'CoCoRaHS_partial_reports.csv').open('w',newline='',encoding='utf-8') as fh:
+    with (OUT/'Rainfall_partial_reports.csv').open('w',newline='',encoding='utf-8') as fh:
         csv.writer(fh).writerow(['station_id','report_type','period_start_utc',
             'period_end_utc','reported_in','requested_start_utc','requested_end_utc',
             'classification','source_url'])
