@@ -100,7 +100,7 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                     details=detail+'; observed COOP daily subset only')
                 entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
                 counts['iem_coop_incomplete_populated']+=1
-            status='INTERVAL REVIEW' if candidates else 'NO REPORTS'
+            status='INCOMPLETE — POPULATED' if options else 'INTERVAL REVIEW' if candidates else 'NO REPORTS'
             if len(qualified)>1:status='AMBIGUOUS ID'
             for record,url,network in candidates:
                 if not record['start']<b or not record['end']>a:continue
