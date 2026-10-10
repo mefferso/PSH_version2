@@ -18,7 +18,7 @@ jobs:
         run: |
           PYTHONPATH=scripts python - <<'PY'
           import datetime as dt,requests
-          import hourlyprecip
+          import hourlyprecip,iem
           a=dt.datetime(2026,10,8,tzinfo=dt.timezone.utc)
           b=dt.datetime(2026,10,10,tzinfo=dt.timezone.utc)
           for network,stations in [('LA_ASOS',['MSY','BTR','NEW','ASD']),('MS_ASOS',['BIX','GPT','PQL','MCB'])]:
