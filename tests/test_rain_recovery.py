@@ -74,3 +74,18 @@ class CoCoMultidayRecoveryTests(unittest.TestCase):
         reports=cocorahs.parse_multiday_export(text,'LA-ST-11',daily)
         self.assertEqual(cocorahs.export_total(reports,a,b),9.63)
         self.assertIsNone(cocorahs.export_total(cocorahs.parse_multiday_export(text,'LA-ST-11',[]),a,b))
+
+class HadsSHEFRecoveryTests(unittest.TestCase):
+    def test_exact_station_daily_periods_and_missing_report(self):
+        import hads
+        a=dt.datetime(2024,9,10,12,tzinfo=UTC)
+        b=a+dt.timedelta(days=2)
+        csv_text='station,valid,PPDRGZZ,PCIRGZZ\\nTEST,2024-09-11 12:00,2.1,20\\nTEST,2024-09-12 12:00,3.4,23.4\\nOTHER,2024-09-12 12:00,9.0,29\\n'
+        rows=hads.parse(csv_text,'TEST')
+        self.assertEqual(len(rows),2)
+        self.assertEqual(cocorahs.export_total(rows,a,b),5.5)
+        self.assertIsNone(cocorahs.export_total(rows[:1],a,b))
+
+    def test_cumulative_counter_not_storm_total(self):
+        import hads
+        self.assertEqual(hads.parse('station,valid,PCIRGZZ\\nTEST,2024-09-11 12:00,20\\n','TEST'),[])
