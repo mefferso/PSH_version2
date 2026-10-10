@@ -114,6 +114,7 @@ def populate(wb,qc,start,end,counts,audit):
         if len(sid)==4 and sid.startswith('K'):sid=sid[1:]
         qualified=[]
         findings=[]
+        available=[]
         for network,body,url,error in responses:
             if error:findings.append(network+' '+error);continue
             try:total,count,traces=parse(body,sid,network,a,b)
@@ -121,6 +122,7 @@ def populate(wb,qc,start,end,counts,audit):
                 findings.append(network+' '+type(exc).__name__);continue
             if count:
                 details=coverage_details(body,sid,network,a,b)
+                available.append((count,details['observed_sum_inches'],network,url,details))
                 findings.append(f"{network}: {count}/{details['expected_hours']} hours, {traces} traces, reported-hours sum {details['observed_sum_inches']:.2f} in (INCOMPLETE where gaps exist); first missing UTC {details['missing_hours_utc'][:6]}")
             if total is None and count and details['missing_hours_utc']:
                 try:
