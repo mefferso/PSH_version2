@@ -149,7 +149,7 @@ def collect_export(station,start,end,session=requests):
 
 # Keep the explicit-metadata JSON parser available for fixtures and other clients;
 # production historical recovery uses the official GMT export contract.
-def populate(wb,qc,start,end,counts,audit):
+def populate(wb,qc,start,end,counts,audit,output_dir=None):
     import json,csv
     from pathlib import Path
     from concurrent.futures import ThreadPoolExecutor
@@ -188,7 +188,8 @@ def populate(wb,qc,start,end,counts,audit):
 
     # Separate observed daily/multiday rain from qualified storm totals.
     # Deliberately no arithmetic sum across partial/overlapping intervals.
-    target=Path('output/CoCoRaHS_partial_reports.csv');target.parent.mkdir(parents=True,exist_ok=True)
+    target=(Path(output_dir) if output_dir is not None else Path('output'))/'CoCoRaHS_partial_reports.csv'
+    target.parent.mkdir(parents=True,exist_ok=True)
     with target.open('w',newline='',encoding='utf-8') as fh:
         fields=['station_id','report_type','period_start_utc','period_end_utc','reported_in',
                 'requested_start_utc','requested_end_utc','classification','source_url']
