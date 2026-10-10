@@ -46,6 +46,26 @@ class SynopticIntervalRecoveryTests(unittest.TestCase):
         payload['STATION'][0]['OBSERVATIONS']['precipitation'][1]['first_report']=(a+dt.timedelta(days=1,hours=1)).isoformat()
         self.assertIsNone(synoptic.precip_total(payload,'LIX',a,b))
 
+class SynopticAdjacentIntervalsTests(unittest.TestCase):
+    def test_outside_reports_do_not_invalidate_complete_window(self):
+        import synoptic
+        a=dt.datetime(2024,9,10,12,tzinfo=UTC)
+        b=a+dt.timedelta(days=2)
+        def report(x,y,value):
+            return {'interval':1,'total':value,'first_report':x.isoformat(),
+                    'last_report':y.isoformat(),'count':1,
+                    'report_type':'precip_accum_24_hour'}
+        observations=[report(a-dt.timedelta(days=1),a,0.1),
+                      report(a,a+dt.timedelta(days=1),2.0),
+                      report(a+dt.timedelta(days=1),b,3.0),
+                      report(b,b+dt.timedelta(days=1),0.2)]
+        payload={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'precipitation':'Inches'},
+                 'STATION':[{'STID':'TEST','OBSERVATIONS':{'precipitation':observations}}]}
+        self.assertEqual(synoptic.precip_total(payload,'TEST',a,b),5.0)
+        observations[0]=report(a-dt.timedelta(hours=1),a+dt.timedelta(hours=23),0.1)
+        self.assertIsNone(synoptic.precip_total(payload,'TEST',a,b))
+
+
 class CoCoMultidayRecoveryTests(unittest.TestCase):
     def test_multiday_uses_verified_prior_observation_and_inclusive_reporting_date(self):
         a=dt.datetime(2024,9,10,12,tzinfo=UTC);b=a+dt.timedelta(days=2)
