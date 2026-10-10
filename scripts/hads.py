@@ -21,7 +21,7 @@ def parse(text, station):
     reader=csv.DictReader(io.StringIO('\n'.join(lines)))
     fields=reader.fieldnames or []
     station_key=next((x for x in fields if x.strip().lower() in ('station','site','stid')),None)
-    time_key=next((x for x in fields if x.strip().lower() in ('valid','valid[utc]','utc','timestamp')),None)
+    time_key=next((x for x in fields if x.strip().lower() in ('valid','valid[utc]','utc','utc_valid','timestamp')),None)
     if not station_key or not time_key:raise ValueError('SHEF archive station/UTC columns missing')
     # IEM exposes raw SHEF variable names. Third character D specifies a
     # daily duration. Exact variable identity is retained in provenance.
@@ -31,7 +31,9 @@ def parse(text, station):
         if str(row.get(station_key,'')).strip().upper()!=station.upper():continue
         t=timestamp(str(row.get(time_key,'')).strip())
         if t is None:
-            try:t=dt.datetime.strptime(str(row.get(time_key,'')).strip(),'%Y-%m-%d %H:%M').replace(tzinfo=dt.timezone.utc)
+            try:
+                raw=str(row.get(time_key,'')).strip()
+                t=dt.datetime.fromisoformat(raw).replace(tzinfo=dt.timezone.utc)
             except ValueError:continue
         for key in precip_keys:
             v=finite(row.get(key),0,100)
