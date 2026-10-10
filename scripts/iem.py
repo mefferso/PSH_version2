@@ -131,10 +131,11 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                         if s.cell(r,col).value is not None:
                             good=[x for x in wind_rows if x.get(field) is not None]
                             peak=max(good,key=lambda x:x[field]) if good else None
-                            # Both minute archives and ASOS aviation reports carry
-                            # two-minute sustained wind. Sampling frequency does
-                            # not justify discarding a higher observed mean.
-                            if field=='wind' and peak and peak[field]>float(s.cell(r,col).value):
+                            # Preserve the highest qualified maximum across archives for
+                            # BOTH sustained winds and gusts. An earlier minute
+                            # gust must not block a higher METAR/SPECI/PK WND gust.
+                            # Pressure remains conservative (no replacement).
+                            if field in ('wind','gust') and peak and peak[field]>float(s.cell(r,col).value):
                                 audit.entries[:]=[e for e in audit.entries if not(e['tab']==tab and e['row']==r and e['variable']==field)]
                             else:
                                 for sample in wind_rows:sample[field]=None
