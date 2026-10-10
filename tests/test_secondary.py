@@ -40,3 +40,20 @@ class CapturedWeatherSTEMTests(unittest.TestCase):
         self.assertEqual(len(rows),1)
         self.assertAlmostEqual(rows[0]['gust'],30.4141684665)
         self.assertEqual(rows[0]['time'].second,39)
+
+class PeakDirectionSafetyTests(unittest.TestCase):
+    def test_concurrent_wind_vane_does_not_prove_peak_gust_direction(self):
+        from openpyxl import Workbook
+        from common import Audit
+        from iem import write_wind
+        sheet=Workbook().active
+        t=dt.datetime(2024,9,11,12,tzinfo=UTC)
+        rows=[{'time':t,'wind':30,'gust':52,'dir':180,'gust_dir':None,'pressure':None}]
+        audit=Audit()
+        self.assertEqual(write_wind(sheet,2,rows,'TEST',audit,'https://example.org/','fixture'),2)
+        self.assertEqual(sheet.cell(2,12).value,180)
+        self.assertIsNone(sheet.cell(2,18).value)
+        rows[0]['gust_dir']=220
+        other=Workbook().active
+        write_wind(other,2,rows,'TEST',Audit(),'https://example.org/','fixture')
+        self.assertEqual(other.cell(2,18).value,220)
