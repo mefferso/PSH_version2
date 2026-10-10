@@ -1,5 +1,5 @@
 name: One-time PSH observed-data policy release
-# Retry after restoring qualified Synoptic totals alongside incomplete fallbacks.
+# Final rainfall source priority review.
 on:
   push:
     paths: ['.github/workflows/observed-data-release.yml']
