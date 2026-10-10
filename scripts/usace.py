@@ -38,6 +38,14 @@ class PageText(HTMLParser):
 def station_link(cell):
     link = cell.hyperlink.target if cell.hyperlink else ""
     parsed = urlparse(link or "")
+    if parsed.hostname == 'cwms-data.usace.army.mil':
+        # Compatibility for independently reviewed datum registries after the
+        # template link migration. Only exact audited URLs resolve an SID.
+        from coastal_water import load_mapping
+        for mapping in load_mapping().values():
+            if link == mapping['observation_url']:
+                return mapping['rivergages_sid'], link
+        return None
     if parsed.hostname != HOST or not parsed.path.lower().startswith("/watercontrol/"):
         return None
     sid = parse_qs(parsed.query).get("sid", [""])[0]

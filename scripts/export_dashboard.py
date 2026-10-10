@@ -26,11 +26,24 @@ def export(out=Path('output'),site=Path('site')):
     result['tabs']['Provenance']={'status':'REVIEW','headers':['Tab','Row','Site ID','Variable','Value','Unit','UTC time','Datum','Status','Source URL','Details'],
         'rows':[{'v':[e.get(k) for k in ('tab','row','site_id','variable','value','unit','time_utc','datum','status','source_url','details')],
                  'links':{'9':e['source_url']}} for e in audit]}
+    from common import identifier
+    from coastal_water import FILES
+    review=json.loads((out/FILES[0]).read_text());result['water_review']=review
+    by_id={(r['site_id'],r['row']):r for r in review}
+    water=result['tabs']['Water Level'];base=len(water['headers'])
+    water['headers'].extend(['Review peak (ft; original datum)','Review peak UTC','Review datum','Coverage / qualification','Historical observations'])
+    water['notice']='PSH water values require verified datum evidence. Review peaks retain measured stage in its original datum; I identifies incomplete or unqualified observations. Human meteorologist review required.'
+    for row in water['rows']:
+        r=by_id.get((identifier(row['v'][0]),row['row']));row['v']+=[None]*5
+        if r:
+            row['v'][base:]=[r.get('peak_ft'),r.get('peak_time_utc'),r.get('observed_datum'),r.get('reason'),r.get('source_url')]
+            if r.get('source_url'):row['links'][str(base+4)]=r['source_url']
     site.mkdir(parents=True,exist_ok=True);(site/'data').mkdir(exist_ok=True)
     (site/'data/latest.json').write_text(json.dumps(result,ensure_ascii=False,allow_nan=False))
     shutil.copyfile(target,site/target.name)
     with zipfile.ZipFile(site/'review-outputs.zip','w',zipfile.ZIP_DEFLATED) as z:
         paths=[target,out/'QC.json',out/'provenance.json',out/'WeatherFlow-import-template.json',out/'Rainfall_partial_reports.csv',out/'USGS_stage_review.csv']
+        paths.extend(out/name for name in FILES)
         paths.extend(out/'csv'/name for name in meta.get('csv_files',[]))
         for path in paths:
             if not path.is_file():raise ValueError('Missing manifested artifact: '+str(path))
@@ -38,6 +51,7 @@ def export(out=Path('output'),site=Path('site')):
     shutil.copyfile(out/'WeatherFlow-import-template.json',site/'WeatherFlow-import-template.json')
     shutil.copyfile(out/'Rainfall_partial_reports.csv',site/'Rainfall_partial_reports.csv')
     shutil.copyfile(out/'USGS_stage_review.csv',site/'USGS_stage_review.csv')
+    for name in FILES:shutil.copyfile(out/name,site/name)
     (site/'.nojekyll').write_text('')
     print(f'Dashboard: {len(book.sheetnames)} workbook tabs + provenance; {len(audit)} measurements');return result
 

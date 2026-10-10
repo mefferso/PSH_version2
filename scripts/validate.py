@@ -15,7 +15,7 @@ def validate(out=Path('output'),template=Path('Copy of PSHLIX_YYYYALXX_StormName
     if Path(name).name!=name:raise ValueError('Unsafe workbook path')
     if meta.get('template_sha256')!=hashlib.sha256(Path(template).read_bytes()).hexdigest():raise ValueError('Template checksum mismatch')
     original=load_workbook(template);w=load_workbook(out/name)
-    if w.sheetnames!=original.sheetnames+['QC']:raise ValueError('Original tabs changed')
+    if w.sheetnames!=original.sheetnames+['QC','Water Level Review']:raise ValueError('Original tabs changed')
     for tab,n in [('Wind and Pressure',10),('Rainfall',7),('Water Level',6)]:
         old=original[tab];s=w[tab]
         if set(str(x) for x in old.merged_cells.ranges)!=set(str(x) for x in s.merged_cells.ranges):raise ValueError('Merged template structure changed')
@@ -66,6 +66,22 @@ def validate(out=Path('output'),template=Path('Copy of PSHLIX_YYYYALXX_StormName
         else:
             col=COLS.get(e['tab'],{}).get(e['variable'])
             if not col or w[e['tab']].cell(e['row'],col).value!=e['value']:raise ValueError('Orphan measurement audit')
+    from coastal_water import FILES,HEADERS,FIELDS
+    review=json.loads((out/FILES[0]).read_text())
+    if len({r['site_id'] for r in review})!=len(review):raise ValueError('Duplicate water review ID')
+    review_sheet=w['Water Level Review']
+    if [c.value for c in review_sheet[1]]!=HEADERS:raise ValueError('Water review headers mismatch')
+    for n,r in enumerate(review,2):
+        actual=[review_sheet.cell(n,c+1).value for c in range(len(FIELDS))]
+        expected=[r.get(k) if r.get(k)!='' else None for k in FIELDS]
+        for x,y in zip(actual,expected):
+            if isinstance(x,(int,float)) and isinstance(y,(int,float)):
+                if abs(x-y)>1e-10:raise ValueError('Water review workbook mismatch')
+            elif x!=y:raise ValueError('Water review workbook mismatch')
+        if r.get('peak_ft') is not None and (finite(r['peak_ft']) is None or not timestamp(r.get('peak_time_utc')) or not start<=timestamp(r['peak_time_utc'])<end):raise ValueError('Invalid water review peak/time')
+        if r.get('can_populate_psh'):
+            e=audit_map.get(('Water Level',r['row'],'water'))
+            if not e or e['site_id']!=r['site_id'] or e['time_utc']!=r['peak_time_utc'] or e['value']!=r['psh_value_ft']:raise ValueError('Qualified review lacks matching water provenance')
     import products
     expected=deepcopy(w);products.summaries(expected)
     for first,*_ in products.BLOCKS:
@@ -93,6 +109,8 @@ def validate_site(out=Path('output'),site=Path('site')):
         expected=export(out,Path(d))
         if payload!=expected:raise ValueError('Dashboard workbook values differ')
     files=[meta['workbook'],'QC.json','provenance.json','WeatherFlow-import-template.json','Rainfall_partial_reports.csv','USGS_stage_review.csv']+['csv/'+n for n in meta['csv_files']]
+    from coastal_water import FILES
+    files.extend(FILES)
     with zipfile.ZipFile(site/'review-outputs.zip') as z:
         if sorted(z.namelist())!=sorted(files):raise ValueError('Archive contains unrelated/missing files')
         for name in files:
@@ -100,6 +118,8 @@ def validate_site(out=Path('output'),site=Path('site')):
     if (site/meta['workbook']).read_bytes()!=(out/meta['workbook']).read_bytes():raise ValueError('Workbook download mismatch')
     if (site/'Rainfall_partial_reports.csv').read_bytes()!=(out/'Rainfall_partial_reports.csv').read_bytes():raise ValueError('CoCoRaHS partial download mismatch')
     if (site/'USGS_stage_review.csv').read_bytes()!=(out/'USGS_stage_review.csv').read_bytes():raise ValueError('USGS stage review download mismatch')
+    for name in FILES:
+        if (site/name).read_bytes()!=(out/name).read_bytes():raise ValueError('Coastal water download mismatch')
     print('Validated dashboard tabs and storm-specific downloads')
 
 if __name__=='__main__':
