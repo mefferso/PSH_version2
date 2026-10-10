@@ -171,10 +171,20 @@ def populate_rain(wb,qc,start,end,counts,audit):
         sid=('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']
         if not token:return st,None,None,'CREDENTIAL REQUIRED',None
         try:
-            r=requests.get(PRECIP_URL,params={'token':token,'stid':sid,'start':a.strftime('%Y%m%d%H%M'),
-                'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day','interval_window':'0','units':'english,precip|in','obtimezone':'UTC','all_reports':1,'complete':0},timeout=20)
-            r.raise_for_status();value=precip_total(r.json(),sid,a,b)
-            return st,value,public_url(r.url),'REVIEW REQUIRED' if value is not None else 'INCOMPLETE',r.json()
+            params={'token':token,'stid':sid,'start':a.strftime('%Y%m%d%H%M'),
+                'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day',
+                'interval_window':'0','units':'english,precip|in','obtimezone':'UTC',
+                'all_reports':0,'complete':1}
+            r=requests.get(PRECIP_URL,params=params,timeout=20)
+            r.raise_for_status()
+            payload=r.json()
+            value=precip_total(payload,sid,a,b)
+            if value is not None:
+                return st,value,public_url(r.url),'REVIEW REQUIRED',payload
+            params.update(all_reports=1,complete=0)
+            r2=requests.get(PRECIP_URL,params=params,timeout=20)
+            r2.raise_for_status()
+            return st,None,public_url(r2.url),'INCOMPLETE',r2.json()
         except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR',None
     with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
     for st,value,url,status,payload in results:
