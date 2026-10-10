@@ -11,7 +11,7 @@ import io
 from pathlib import Path
 import requests
 from common import inventory, finite, timestamp, public_url
-from cocorahs import rain_bounds, export_total
+from cocorahs import rain_bounds, export_total, nearby_complete_total
 
 URL='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py'
 DOC='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py?help='
@@ -91,6 +91,13 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
         if len(qualified)>1 and max(qualified.values())-min(qualified.values())<=.005:
             value=next(iter(qualified.values()))
         detail='Exact-ID IEM HADS SHEF PPD 24-hour UTC reports; '+DOC
+        if value is None:
+            for source_code,items in series.items():
+                nearby=nearby_complete_total(items,a,b)
+                if nearby:
+                    amount,observed_start,observed_end=nearby
+                    detail+=f'; NEARBY COMPLETE SHEF {source_code} {amount:.2f} in {observed_start.isoformat()} to {observed_end.isoformat()} (REVIEW ONLY, not exact requested interval)'
+                    counts['hads_nearby_complete_review']+=1
         detail+=f'; {len(records)} valid daily readings; {len(qualified)} complete source-code series'
         if error:detail+='; archive/schema request failed: '+error
         if value is not None:
