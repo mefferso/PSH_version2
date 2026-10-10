@@ -17,16 +17,20 @@ class SecondaryTests(unittest.TestCase):
         reports[1]['gaugeCatchIsTrace']=True
         self.assertIsNone(cocorahs.total(reports,'LA-ST-11',a,b))
 
-    def test_weatherstem_units_and_mean_period_required(self):
+    def test_weatherstem_native_speed_and_explicit_mean_period_metadata(self):
         metadata={'id':123,'transmitters':[{'sensors':[{'id':1,'name':'Anemometer','unit':'mph'},
              {'id':2,'name':'10 Minute Wind Gust','unit':'mph'},{'id':3,'name':'Barometer','unit':'inHg'}]}]}
         raw=[['Timestamp','Anemometer','10 Minute Wind Gust','Barometer'],['2024-09-11 12:00',40,50,29.5]]
         rows=weatherstem.parse(raw,metadata,dt.date(2024,9,11),dt.date(2024,9,11))
-        self.assertIsNone(rows[0]['wind']) # no validated sustained averaging period
+        self.assertAlmostEqual(rows[0]['wind'],40*0.8689762419)
+        self.assertEqual(rows[0]['wind_averaging_period_basis'],'unverified native Anemometer average')
         self.assertAlmostEqual(rows[0]['gust'],50*0.8689762419)
         self.assertIsNone(rows[0]['pressure']) # barometer not proven MSLP
         metadata['transmitters'][0]['sensors'][0]['averaging_period_minutes']=2
-        self.assertAlmostEqual(weatherstem.parse(raw,metadata,dt.date(2024,9,11),dt.date(2024,9,11))[0]['wind'],40*0.8689762419)
+        qualified=weatherstem.parse(raw,metadata,dt.date(2024,9,11),dt.date(2024,9,11))[0]
+        self.assertAlmostEqual(qualified['wind'],40*0.8689762419)
+        self.assertEqual(qualified['wind_averaging_period_minutes'],2)
+        self.assertEqual(qualified['wind_averaging_period_basis'],'explicit station metadata')
 
     def test_weatherstem_station_link_cannot_choose_nearby_station(self):
         self.assertEqual(weatherstem.link_parts('https://eastbatonrouge.weatherstem.com/data?refer=/alexbox'),('eastbatonrouge','alexbox'))
@@ -59,9 +63,10 @@ class PeakDirectionSafetyTests(unittest.TestCase):
         self.assertEqual(other.cell(2,18).value,220)
 
 class WeatherSTEMUnqualifiedSpeedTests(unittest.TestCase):
-    def test_unknown_averaging_period_keeps_anemometer_candidate_out_of_psh_wind(self):
+    def test_unknown_averaging_period_retains_review_candidate_with_unverified_mean(self):
         meta={'id':5,'transmitters':[{'sensors':[{'id':1,'name':'Anemometer','unit':'mph'}]}]}
         raw=[['Timestamp','Anemometer'],['2024-09-11 12:00:00',60]]
         row=weatherstem.parse(raw,meta,dt.date(2024,9,11),dt.date(2024,9,11))[0]
-        self.assertIsNone(row['wind'])
-        self.assertAlmostEqual(row['unqualified_speed'],60*0.8689762419006479)
+        self.assertAlmostEqual(row['wind'],60*0.8689762419006479)
+        self.assertIsNone(row['wind_averaging_period_minutes'])
+        self.assertEqual(row['wind_averaging_period_basis'],'unverified native Anemometer average')
