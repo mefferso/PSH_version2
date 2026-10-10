@@ -4,6 +4,8 @@ Only direct NAVD88 elevation parameter codes (63160, 62620 and 62615, feet) are 
 Stage (00065) is deliberately not converted without validated vertical datum metadata.
 """
 import datetime as dt
+import csv
+from pathlib import Path
 import math
 import os
 import re
@@ -126,7 +128,7 @@ def stage_peak(site,start,end,session=requests):
     else:raise ValueError('USGS stage pagination incomplete')
     return max(readings,key=lambda x:x[0]) if readings else None
 
-def populate(wb, qc, start, end, counts, audit=None):
+def populate(wb, qc, start, end, counts, audit=None, output_dir=None):
     from concurrent.futures import ThreadPoolExecutor
     sheet = wb["Water Level"]
     ids={site_from_link(sheet.cell(st["row"],1)) for st in inventory(wb,"Water Level") if st["network"].upper()=="USGS"}
@@ -144,6 +146,7 @@ def populate(wb, qc, start, end, counts, audit=None):
         except (requests.RequestException,ValueError) as exc:return sid,exc
     with ThreadPoolExecutor(max_workers=6) as pool:
         stage_cache=dict(pool.map(fetch_stage,stage_ids))
+    stage_review=[]
     evidence={}
     for code in PARAMETERS:
         try:evidence[code]=parameter_evidence(code)
@@ -178,6 +181,11 @@ def populate(wb, qc, start, end, counts, audit=None):
                     stage,when=candidate
                     detail+=f"; MANUAL REVIEW ONLY: observed 00065 stage peak {stage:.2f} ft at {when.isoformat()} (gage height, NOT NAVD88 or inundation depth)"
                     counts["usgs_stage_review_candidates"]+=1
+                    stage_review.append({'site_id':site,'usgs_site_number':usgs,
+                        'peak_gage_height_ft':round(stage,2),'peak_time_utc':when.isoformat(),
+                        'datum':'GAGE HEIGHT — NOT NAVD88',
+                        'qualification':'MANUAL DATUM REVIEW REQUIRED',
+                        'source_url':'https://waterdata.usgs.gov/monitoring-location/'+usgs+'/'})
                 qc.append(["Water Level",site,"USGS","NO DIRECT NAVD88",detail,
                            urls[0] if urls else ""])
                 continue
@@ -210,3 +218,12 @@ def populate(wb, qc, start, end, counts, audit=None):
             qc.append(["Water Level",site,"USGS",status,detail,
                        "https://waterdata.usgs.gov/monitoring-location/"+usgs+"/"])
         time.sleep(0.1)
+
+    path=(Path(output_dir) if output_dir is not None else Path('output'))/'USGS_stage_review.csv'
+    path.parent.mkdir(parents=True,exist_ok=True)
+    columns=['site_id','usgs_site_number','peak_gage_height_ft','peak_time_utc',
+             'datum','qualification','source_url']
+    with path.open('w',newline='',encoding='utf-8') as handle:
+        writer=csv.DictWriter(handle,fieldnames=columns)
+        writer.writeheader()
+        writer.writerows(stage_review)
