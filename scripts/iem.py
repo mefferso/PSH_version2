@@ -26,7 +26,7 @@ def parse(text,station,start,end):
         rows.append({'time':t,'wind':finite(raw.get('sknt'),0,180),'gust':finite(raw.get('gust'),0,200),
                      'dir':finite(raw.get('drct'),0,360),'pressure':finite(raw.get('mslp'),850,1100),
                      'rain':finite(raw.get('p01i'),0,25),'trace':raw.get('p01i')=='T',
-                     'report_type':(3 if str(raw.get('metar') or '').lstrip().upper().startswith('METAR ') and not str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else 4 if str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else None),'raw':raw})
+                     'report_type':(4 if str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else 3 if str(raw.get('metar') or '').strip() else None),'raw':raw})
         # PK WND is the measured peak since the previous routine report, not
         # the gust at METAR issuance. Preserve its own direction and occurrence.
         match=re.search(r'\bPK WND (\d{3})(\d{2,3})/(\d{2})(\d{2})?\b',raw.get('metar') or '')
