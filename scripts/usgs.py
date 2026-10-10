@@ -13,7 +13,7 @@ import time
 from urllib.parse import urlparse
 import requests
 from openpyxl.cell.cell import MergedCell
-from common import inventory
+from common import observation_now, inventory
 
 BASE = "https://api.waterdata.usgs.gov/ogcapi/v1/collections/continuous/items"
 PARAMETERS = ("63160", "62620", "62615")
@@ -47,7 +47,7 @@ def parse_observations(payload, site, start, end):
             moment = moment.astimezone(dt.timezone.utc)
         except (ValueError, TypeError, KeyError, OverflowError):
             continue
-        if math.isfinite(value) and -30 < value < 50 and start <= moment.date() <= end:
+        if math.isfinite(value) and -30 < value < 50 and start <= moment.date() <= end and moment<observation_now():
             found.append((value, moment, p))
     return found
 
@@ -105,7 +105,7 @@ def parse_stage_candidates(payload,site,start,end):
             if moment.tzinfo is None or not math.isfinite(value):continue
             moment=moment.astimezone(dt.timezone.utc)
         except (ValueError,TypeError,KeyError,OverflowError):continue
-        if -100<value<200 and start<=moment.date()<=end:
+        if -100<value<200 and start<=moment.date()<=end and moment<observation_now():
             values.append((value,moment))
     return values
 

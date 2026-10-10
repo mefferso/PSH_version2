@@ -10,7 +10,9 @@ def matches(local,remote):
     return (local.get('meta')==remote.get('meta') and
             local.get('tabs')==remote.get('tabs') and
             local.get('water_review')==remote.get('water_review') and
-            local.get('audit')==remote.get('audit'))
+            local.get('audit')==remote.get('audit') and
+            local.get('marine_summary_review')==remote.get('marine_summary_review') and
+            local.get('observation_coverage_review')==remote.get('observation_coverage_review'))
 
 def verify(url,site=Path('site'),attempts=12):
     p=urlparse(url)
@@ -26,7 +28,7 @@ def verify(url,site=Path('site'),attempts=12):
                 download=requests.get(base+'coastal_water_review.csv',params={'psh_commit':local['meta']['commit']},timeout=(5,20),headers={'Cache-Control':'no-cache'})
                 download.raise_for_status()
                 if download.content==(Path(site)/'coastal_water_review.csv').read_bytes():
-                    print(f'Pages verified: commit {local["meta"]["commit"]}; Water Level tab and coastal review match validated export')
+                    print(f'Pages verified: commit {local["meta"]["commit"]}; Summary, Wind and Pressure, Water Level, Rainfall and reviews match validated export')
                     return True
         except (requests.RequestException,ValueError):pass
         if attempt+1<attempts:time.sleep(10)

@@ -1,0 +1,58 @@
+{
+  "date_utc": "2026-10-10T07:20:01.948140+00:00",
+  "tests": {
+    "passed": 138,
+    "failed": 0,
+    "seconds": 142.3,
+    "command": "python -m unittest discover -s tests"
+  },
+  "workbook_and_site_validation": {
+    "Isaias": true,
+    "Francine": true
+  },
+  "baseline_public_workbook_four_tabs_matching_rows": 600,
+  "independent_coastal_raw_peak_matches": 31,
+  "coastal": {
+    "observed": 27,
+    "qualified": 13
+  },
+  "rainfall": {
+    "before": {
+      "rows": 70,
+      "positive": 3
+    },
+    "psh_partial_after": {
+      "rows": 43,
+      "positive": 3
+    },
+    "archive_review": {
+      "stations": 41,
+      "reports": 71,
+      "combined_stations_with_measurements": 84,
+      "positive_individual_reports": [
+        {
+          "site_id": "LA-JF-05",
+          "source_date": "2026-10-09",
+          "reported_inches": 0.01
+        }
+      ],
+      "can_populate_psh": false
+    }
+  },
+  "francine": {
+    "compared": 206,
+    "within_tolerance": 196,
+    "discrepancies": 10,
+    "missing": 372,
+    "ambiguous": 2,
+    "window_mismatch": 0,
+    "agreement": 0.9514563106796117
+  },
+  "published_during_testing": false,
+  "merged": false,
+  "future_operational_pages_verification": "Existing workflow explicitly dispatches main, then compares all operational tabs/manifest/audit/reviews with validated export",
+  "artifacts": {
+    "Isaias-review-outputs.zip": "cbc1f6b576bcc336933eeff56ebc8877e3bab046b31d0e0ef9031f7ecaca4be3",
+    "Francine-review-outputs.zip": "8b4da098e1b2b4d47d5ff8e4f5b526a2ad2c59852db7876f365c383a76de969e"
+  }
+}

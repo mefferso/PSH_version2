@@ -104,3 +104,12 @@ job validates the workbook and exported site, deploys Pages, then verifies the
 public manifest, Water Level tab and coastal review download against the local
 validated export. Confirm the **Verify deployed Water Level tab and station
 review** step succeeds after merge. This PR does not publish the updated site.
+
+Phase 3 review outputs now explain each marine Summary exclusion (all networks,
+known height below 20 m, separate mean/gust eligibility), provisional event peaks,
+and elapsed coverage. Future samples and not-yet-due daily reports are not counted
+as missing. Native sensor-keyed Synoptic rain responses are supported. Failed
+primary CoCoRaHS downloads can preserve exact-ID IEM daily amounts in a separate
+archive review with unknown observation clocks/periods; these are never summed
+or assigned to official PSH cells. See
+[Phase 3 live Isaias/Francine audit and post-merge workflow instructions](docs/validation/phase3-20261010/README.md).

@@ -104,14 +104,17 @@
         "last-update": "2026-09-14T05:33:40.462271Z"
       }
     ],
-    "notes": "Flood side identity verified; location datum alone cannot qualify stage.",
+    "notes": "USACE RiverGages explicitly documents Gage Zero 0 Ft NAVD88; exact SID, gauge name and coordinates independently match live CWMS series. No conversion applied. Current evidence conservatively qualifies only observations on/after 2026-10-08; historical datum epoch not established.",
     "datum_rule": {
-      "kind": "review",
-      "evidence_source": "CWMS station-specific gauge description (not location elevation)"
+      "kind": "direct",
+      "effective_start_utc": "2026-10-08T00:00:00Z",
+      "evidence_text": "USACE RiverGages explicitly documents Gage Zero 0 Ft NAVD88; exact SID, gauge name and coordinates independently match live CWMS series. No conversion applied. Current evidence conservatively qualifies only observations on/after 2026-10-08; historical datum epoch not established.",
+      "evidence_source": "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=E&sid=76030"
     },
     "evidence_urls": [
       "https://cwms-data.usace.army.mil/cwms-data/locations/IHNC_SurgeBar_E?office=MVN",
-      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?sid=76030"
+      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?sid=76030",
+      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=E&sid=76030"
     ],
     "verified_utc": "2026-10-10",
     "metadata_url": "https://cwms-data.usace.army.mil/cwms-data/locations/IHNC_SurgeBar_E?office=MVN"
@@ -607,14 +610,17 @@
         "last-update": "2026-09-14T05:36:57.518975Z"
       }
     ],
-    "notes": "Location NAVD88 alone is insufficient to prove stage datum.",
+    "notes": "USACE RiverGages explicitly documents Gage Zero 0 Ft NAVD88; exact SID, gauge name and coordinates independently match live CWMS series. No conversion applied. Current evidence conservatively qualifies only observations on/after 2026-10-08; historical datum epoch not established.",
     "datum_rule": {
-      "kind": "review",
-      "evidence_source": "CWMS station-specific gauge description (not location elevation)"
+      "kind": "direct",
+      "effective_start_utc": "2026-10-08T00:00:00Z",
+      "evidence_text": "USACE RiverGages explicitly documents Gage Zero 0 Ft NAVD88; exact SID, gauge name and coordinates independently match live CWMS series. No conversion applied. Current evidence conservatively qualifies only observations on/after 2026-10-08; historical datum epoch not established.",
+      "evidence_source": "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=S&sid=76040"
     },
     "evidence_urls": [
       "https://cwms-data.usace.army.mil/cwms-data/locations/GIWW_Paris_Rd?office=MVN",
-      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?sid=76040"
+      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?sid=76040",
+      "https://rivergages.mvr.usace.army.mil/WaterControl/stationinfo2.cfm?dt=S&sid=76040"
     ],
     "verified_utc": "2026-10-10",
     "metadata_url": "https://cwms-data.usace.army.mil/cwms-data/locations/GIWW_Paris_Rd?office=MVN"

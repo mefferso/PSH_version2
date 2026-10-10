@@ -17,6 +17,8 @@ def csv_values(values):
 
 def summaries(wb):
     target=wb['Summary']
+    from observation_review import marine
+    marine_rows={r['row']:r for r in marine(wb)}
     for first,tab,col,descending,kind in BLOCKS:
         for row in target.iter_rows(min_row=first,max_row=first+9,min_col=1,max_col=4):
             for cell in row:
@@ -25,7 +27,10 @@ def summaries(wb):
         for station in inventory(wb,tab):
             r=station['row'];value=finite(s.cell(r,col).value)
             if value is None:continue
-            if kind in ('L','M'):
+            if kind=='M':
+                record=marine_rows.get(r)
+                if not record or not record[('wind' if col==11 else 'gust')+'_eligible']:continue
+            elif kind=='L':
                 height=finite(s.cell(r,9).value,0,1000)
                 if str(s.cell(r,7).value or '')!=kind or height is None or height>=20:continue
             if kind=='NOS' and station['network']!='NOS':continue

@@ -6,7 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import requests
 from openpyxl.cell.cell import MergedCell
-from common import finite, inventory
+from common import finite, inventory, observation_now
 
 BASE = "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter"
 
@@ -62,7 +62,7 @@ def collect(station, start, end, session=requests):
                 timestamp = dt.datetime.strptime(entry["t"], "%Y-%m-%d %H:%M").replace(tzinfo=dt.timezone.utc)
             except (KeyError, ValueError, TypeError):
                 continue
-            if reading is not None and start <= timestamp.date() <= end:
+            if reading is not None and start <= timestamp.date() <= end and timestamp<observation_now():
                 entry = dict(entry, source_url=response.url)
                 all_values.append((reading, timestamp, entry))
         cursor = stop + dt.timedelta(days=1)

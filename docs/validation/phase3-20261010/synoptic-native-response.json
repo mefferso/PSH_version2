@@ -1,0 +1,55 @@
+{
+  "STATION": [
+    {
+      "ID": "5053",
+      "STID": "KMSY",
+      "NAME": "New Orleans, New Orleans International Airport",
+      "ELEVATION": "3.0",
+      "LATITUDE": "29.99278",
+      "LONGITUDE": "-90.25083",
+      "STATUS": "ACTIVE",
+      "MNET_ID": "1",
+      "STATE": "LA",
+      "COUNTRY": "US",
+      "TIMEZONE": "America/Chicago",
+      "ELEV_DEM": "-6.6",
+      "PERIOD_OF_RECORD": {
+        "start": "2002-08-14T00:00:00Z",
+        "end": "2026-10-10T05:55:00Z"
+      },
+      "UNITS": {
+        "position": "ft",
+        "elevation": "ft"
+      },
+      "OBSERVATIONS": {
+        "precip_accum_one_hour": [
+          {
+            "total": 0.0,
+            "first_report": "2026-10-08T11:53:00Z",
+            "last_report": "2026-10-09T11:53:00Z",
+            "count": 24,
+            "interval": 1
+          }
+        ]
+      },
+      "RESTRICTED": false,
+      "RESTRICTED_METADATA": false
+    }
+  ],
+  "SUMMARY": {
+    "NUMBER_OF_OBJECTS": 1,
+    "RESPONSE_CODE": 1,
+    "RESPONSE_MESSAGE": "OK",
+    "METADATA_QUERY_TIME": "8.6 ms",
+    "METADATA_PARSE_TIME": "0.2 ms",
+    "TOTAL_METADATA_TIME": "8.8 ms",
+    "PRECIP_QUERY_TIME": "1.7 ms",
+    "DATA_PARSE_TIME": "5.3 ms",
+    "TOTAL_DATA_TIME": "7.0 ms",
+    "TOTAL_TIME": "15.8 ms",
+    "VERSION": "v2.39.7"
+  },
+  "UNITS": {
+    "precipitation": "Inches"
+  }
+}

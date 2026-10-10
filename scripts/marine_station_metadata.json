@@ -1,0 +1,79 @@
+{
+  "BURL1": {
+    "official_height_above_site_m": 38,
+    "site_elevation_msl_m": 0,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=burl1",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "PTBM6": {
+    "official_height_above_site_m": 4.6,
+    "site_elevation_msl_m": null,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=ptbm6",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "GISL1": {
+    "official_height_above_site_m": 6.6,
+    "site_elevation_msl_m": 2.7,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=gisl1",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "PILL1": {
+    "official_height_above_site_m": 9.5,
+    "site_elevation_msl_m": 2.3,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=pill1",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "NWCL1": {
+    "official_height_above_site_m": 9.9,
+    "site_elevation_msl_m": 1.7,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=nwcl1",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "SHBL1": {
+    "official_height_above_site_m": 15.6,
+    "site_elevation_msl_m": 0,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=shbl1",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "WYCM6": {
+    "official_height_above_site_m": 9.9,
+    "site_elevation_msl_m": 0,
+    "source": "https://www.ndbc.noaa.gov/station_page.php?station=wycm6",
+    "verified_date": "2026-10-10",
+    "method": "Official NOAA page indexed content; direct HTTP station pages returned 403 in execution environment",
+    "applies_to": "Current station configuration; historical epoch requires review"
+  },
+  "KCYD": {
+    "official_height_above_site_m": null,
+    "source": "https://tgftp.nws.noaa.gov/weather/current/KCYD.html",
+    "verified_date": "2026-10-10",
+    "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+    "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+  },
+  "KGLX": {
+    "official_height_above_site_m": null,
+    "source": "https://tgftp.nws.noaa.gov/weather/current/KGLX.html",
+    "verified_date": "2026-10-10",
+    "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+    "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+  },
+  "PTFL1": {
+    "official_height_above_site_m": null,
+    "source": "https://www.ndbc.noaa.gov/faq/bmanht.shtml",
+    "verified_date": "2026-10-10",
+    "method": "Official NWS/FAA metadata search did not establish anemometer height; elevation is not anemometer height",
+    "applies_to": "UNRESOLVED; no automatic Summary eligibility"
+  }
+}

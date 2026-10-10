@@ -5,7 +5,7 @@ import io
 from pathlib import Path
 import re
 import requests
-from common import UTC,bounds,finite,identifier,inventory,interval_total
+from common import UTC,bounds,finite,identifier,inventory,interval_total,elapsed_window
 
 URL='https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py'
 
@@ -17,7 +17,7 @@ def parse(text,station,start,end):
     reader=csv.DictReader(io.StringIO(text))
     if not reader.fieldnames or not {'station','valid'}.issubset(reader.fieldnames):
         raise ValueError('IEM CSV missing station identity or valid time')
-    begin,stop=bounds(start,end);rows=[]
+    begin,stop=bounds(start,end);stop=elapsed_window(begin,stop);rows=[]
     for raw in reader:
         if station_id(raw.get('station'))!=station_id(station):continue
         try:t=dt.datetime.strptime(raw['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=UTC)

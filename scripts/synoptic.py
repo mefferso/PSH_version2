@@ -1,7 +1,7 @@
 """Credential-gated exact-ID Synoptic/MesoWest archived wind and MSLP."""
 import os
 import requests
-from common import inventory,finite,bounds,timestamp
+from common import inventory,finite,bounds,timestamp,elapsed_window
 from iem import write_wind
 
 URL='https://api.synopticdata.com/v2/stations/timeseries'
@@ -11,7 +11,7 @@ FACTORS={'wind_speed':{'m/s':1.9438444924406,'knots':1,'kts':1},
 
 def parse(payload,station,start,end,network=None):
     if (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:raise ValueError('Synoptic API rejected request')
-    a,b=bounds(start,end);units=payload.get('UNITS') or {};rows=[]
+    a,b=bounds(start,end);b=elapsed_window(a,b);units=payload.get('UNITS') or {};rows=[]
     for st in payload.get('STATION',[]):
         if st.get('STID')!=station:continue
         obs=st.get('OBSERVATIONS') or {}
@@ -100,6 +100,22 @@ PRECIP_PERIODS={'precip_accum_one_minute':1/60,'precip_accum_five_minute':5/60,
     'precip_accum_one_hour':1,'precip_accum_three_hour':3,'precip_accum_six_hour':6,
     'precip_accum_12_hour':12,'precip_accum_24_hour':24}
 
+def precipitation_records(site):
+    """Support native sensor-keyed intervals and the documented unified list.
+
+    Keep source timestamps unchanged: first/last report are not automatically
+    the requested storm boundaries. Parallel sensor totals are not added.
+    """
+    observations=site.get('OBSERVATIONS') or {}
+    records=observations.get('precipitation')
+    if isinstance(records,list):return records
+    sensors=[(key,value) for key,value in observations.items()
+             if key in PRECIP_PERIODS or key=='precip_accum']
+    if len(sensors)!=1:return []
+    key,values=sensors[0]
+    if not isinstance(values,list):return []
+    return [dict(r,report_type=key) for r in values if isinstance(r,dict)]
+
 def precip_total(payload,station,start,end):
     if (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:raise ValueError('Synoptic precipitation API rejected request')
     unit=str((payload.get('UNITS') or {}).get('precipitation') or '').lower()
@@ -108,7 +124,7 @@ def precip_total(payload,station,start,end):
     from common import interval_total
     for st in payload.get('STATION',[]):
         if st.get('STID')!=station:continue
-        records=(st.get('OBSERVATIONS') or {}).get('precipitation') or []
+        records=precipitation_records(st)
         readings=[]
         for x in records:
             a=timestamp(x.get('first_report'));b=timestamp(x.get('last_report'));v=finite(x.get('total'),0,10000)
@@ -152,7 +168,7 @@ def partial_precip_from_reports(payload,station,start,end):
     reports=[]
     for site in payload.get('STATION',[]):
         if site.get('STID')!=station:continue
-        for x in (site.get('OBSERVATIONS') or {}).get('precipitation') or []:
+        for x in precipitation_records(site):
             a=timestamp(x.get('first_report'))
             b=timestamp(x.get('last_report'))
             value=finite(x.get('total'),0,10000)
@@ -189,7 +205,7 @@ def populate_rain(wb,qc,start,end,counts,audit):
     with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
     for st,value,url,status,payload in results:
         detail='Exact ID and units; native Synoptic reported intervals, verified report frequency/count and nonoverlapping UTC coverage. Provider-derived amounts require review. '+PRECIP_DOC
-        records=[x for station in (payload or {}).get('STATION',[]) if station.get('STID')==(('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']) for x in (station.get('OBSERVATIONS') or {}).get('precipitation',[])]
+        records=[x for station in (payload or {}).get('STATION',[]) if station.get('STID')==(('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']) for x in precipitation_records(station)]
         if records:
             import json
             detail+='; returned interval candidates: '+json.dumps(records,allow_nan=False)

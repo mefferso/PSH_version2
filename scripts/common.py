@@ -40,6 +40,20 @@ def timestamp(value):
         return t.astimezone(UTC) if t.tzinfo else None
     except (ValueError,TypeError):return None
 
+def observation_now():
+    """One reproducible build cutoff, retaining the requested interval separately."""
+    import os
+    value=os.environ.get('PSH_AS_OF_UTC')
+    if value:
+        parsed=timestamp(value)
+        if parsed is None:raise ValueError('PSH_AS_OF_UTC must be timezone-qualified')
+        return parsed
+    return dt.datetime.now(UTC)
+
+def elapsed_window(start,end,as_of=None):
+    cutoff=as_of or observation_now()
+    return max(start,min(end,cutoff))
+
 def public_url(url):
     p=urlparse(url)
     if p.scheme not in ('https','http') or not p.hostname or p.username or p.password:

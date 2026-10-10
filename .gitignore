@@ -13,3 +13,7 @@ site/WeatherFlow-import-template.json
 
 work/
 site/coastal_water_*.json
+
+site/marine_summary_review.*
+site/observation_coverage_review.json
+site/rainfall_archive_review.*

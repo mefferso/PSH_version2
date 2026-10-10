@@ -8,7 +8,7 @@ from collections import Counter
 from openpyxl import load_workbook
 from openpyxl.cell.cell import MergedCell
 from openpyxl.styles import Font,PatternFill
-from common import Audit,inventory,bounds
+from common import Audit,inventory,bounds,observation_now
 from cocorahs import rain_bounds
 import coastal_water
 import asos1min,iem,hourlyprecip,coopobs,coops,ndbc,usgs,usace,synoptic,weatherstem,cocorahs,hads,tornadoes,imports,products,datums
@@ -73,6 +73,7 @@ def build():
     required={'Summary','Wind and Pressure','Rainfall','Water Level','Tornadoes','Impacts','Inland Flooding'}
     if not required.issubset(wb.sheetnames):raise ValueError('Missing PSH template tabs')
     reset(wb)
+    os.environ.setdefault('PSH_AS_OF_UTC',observation_now().isoformat())
     if 'QC' in wb:del wb['QC']
     qc=wb.create_sheet('QC');qc.append(['Tab','Site ID','Network','Status','Details','Source URL'])
     counts=Counter();audit=Audit()
@@ -107,8 +108,12 @@ def build():
             adapter(wb,qc,start,end,counts,audit,output_dir=OUT)
         else:
             adapter(wb,qc,start,end,counts,audit)
+    import rain_archive_review
+    rain_archive_review.populate(wb,qc,start,end,counts,audit,output_dir=OUT)
     if os.environ.get('PSH_IMPORT_FILE'):imports.load(wb,os.environ['PSH_IMPORT_FILE'],start,end,audit)
     coverage(wb,qc,counts,audit)
+    import observation_review
+    observation_review.write(wb,audit,*bounds(start,end),a,b,OUT)
     products.summaries(wb)
     OUT.mkdir(parents=True,exist_ok=True)
     issues=products.export_csv(wb,OUT/'csv')
@@ -122,7 +127,7 @@ def build():
     statuses=Counter(str(qc.cell(r,4).value) for r in range(2,qc.max_row+1))
     observation_start,observation_end=bounds(start,end)
     report={'observation_start_utc':observation_start.isoformat(),'observation_end_utc':observation_end.isoformat(),'storm':name,'start_utc':str(start),'end_utc':str(end),'rain_start_utc':a.isoformat(),'rain_end_utc':b.isoformat(),
-            'generated_at_utc':dt.datetime.now(dt.timezone.utc).isoformat(),'coverage':'DEVELOPMENT REVIEW — incomplete source coverage',
+            'as_of_utc':os.environ['PSH_AS_OF_UTC'],'provisional':observation_now()<observation_end,'rain_provisional':observation_now()<b,'generated_at_utc':dt.datetime.now(dt.timezone.utc).isoformat(),'coverage':'DEVELOPMENT REVIEW — incomplete source coverage',
             'csv_files':products.CSV_FILES,'workbook':target.name,'measurement_count':len(audit.entries),'counts':dict(counts),'qc_status_counts':dict(statuses),
             'manual_networks':['WeatherFlow'],'csv_kind':'REVIEW and CANDIDATE — NWSI 10-601 (2026-08-17) thresholds; not official issuance',
             'template_sha256':hashlib.sha256(TEMPLATE.read_bytes()).hexdigest(),'commit':os.environ.get('GITHUB_SHA','local'),
