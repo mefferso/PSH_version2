@@ -1,0 +1,58 @@
+name: PSH operational acceptance
+on:
+  push:
+    paths:
+      - '.github/workflows/operational-acceptance.yml'
+  workflow_dispatch:
+    inputs:
+      storm_name:
+        description: 'Historical storm to test'
+        required: true
+        default: 'Hurricane Ida'
+        type: string
+      start_utc:
+        description: 'First UTC date YYYY-MM-DD'
+        required: true
+        default: '2021-08-28'
+        type: string
+      end_utc:
+        description: 'Last UTC date YYYY-MM-DD'
+        required: true
+        default: '2021-09-01'
+        type: string
+permissions:
+  contents: read
+jobs:
+  acceptance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r requirements.lock.txt
+      - name: Collect independent historical cyclone
+        env:
+          STORM_NAME: ${{ inputs.storm_name || 'Hurricane Ida' }}
+          START_UTC: ${{ inputs.start_utc || '2021-08-28' }}
+          END_UTC: ${{ inputs.end_utc || '2021-09-01' }}
+          SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
+          USGS_API_KEY: ${{ secrets.USGS_API_KEY }}
+        run: python scripts/build.py
+      - name: Verify scientific provenance and workbook preservation
+        run: python scripts/validate.py
+      - name: Export operational review and check ZIP contents
+        run: |
+          python scripts/export_dashboard.py
+          python scripts/validate.py --site
+      - name: Preserve independent acceptance output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PSH-independent-acceptance-${{ github.run_number }}
+          path: |
+            output/
+            site/data/latest.json
+            site/review-outputs.zip
+          if-no-files-found: warn
