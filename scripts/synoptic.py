@@ -93,6 +93,10 @@ def precip_total(payload,station,start,end):
         for x in records:
             a=timestamp(x.get('first_report'));b=timestamp(x.get('last_report'));v=finite(x.get('total'),0,10000)
             if a is None or b is None or a>=b or v is None:return None
+            # Providers may include adjacent observations outside the requested
+            # window. They must not invalidate a complete exact-window tiling.
+            # Intervals crossing either requested boundary remain unqualified.
+            if b<=start or a>=end:continue
             if a<start or b>end:return None
             nested=x.get('intervals')
             if isinstance(nested,list):
