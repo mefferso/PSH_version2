@@ -11,13 +11,14 @@ from openpyxl.styles import Font,PatternFill
 from common import Audit,inventory,bounds,observation_now
 from cocorahs import rain_bounds
 import coastal_water
+import airport_fallback
 import asos1min,iem,hourlyprecip,coopobs,coops,ndbc,usgs,usace,synoptic,weatherstem,cocorahs,hads,tornadoes,imports,products,datums
 
 TEMPLATE=Path('Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
 OUT=Path('output')
 
 def collectors():
-    return [hourlyprecip.populate,asos1min.populate,iem.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
+    return [hourlyprecip.populate,asos1min.populate,iem.populate,airport_fallback.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
             weatherstem.populate,cocorahs.populate,synoptic.populate_rain,hads.populate,coopobs.populate,tornadoes.populate,coastal_water.populate]
 
 def reset(wb):
