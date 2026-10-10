@@ -100,7 +100,25 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                     details=detail+'; observed COOP daily subset only')
                 entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
                 counts['iem_coop_incomplete_populated']+=1
-            status='INCOMPLETE — POPULATED' if options else 'INTERVAL REVIEW' if candidates else 'NO REPORTS'
+            if not options:
+                shifted=[]
+                for source in NETWORKS:
+                    subset=[r for r,u,network in candidates if network==source]
+                    nearby=nearby_complete_total(subset,a,b)
+                    if nearby:shifted.append((source,nearby))
+                if len(shifted)==1:
+                    network,(amount,observed_start,observed_end)=shifted[0]
+                    amount=round(amount,2)
+                    sheet.cell(station['row'],8).value=amount
+                    sheet.cell(station['row'],9).value='I'
+                    entry=audit.add('Rainfall',station['row'],station['id'],'rain',amount,'in',b,
+                        next(u for record,u,n in candidates if n==network),interval_start=a,
+                        status='INCOMPLETE',details=detail+'; alternate observed COOP reporting window')
+                    entry['actual_interval_start_utc']=observed_start.isoformat()
+                    entry['actual_interval_end_utc']=observed_end.isoformat()
+                    entry['reporting_window_mismatch']=True
+                    counts['iem_coop_shifted_window_populated']+=1
+            status='INCOMPLETE — POPULATED' if sheet.cell(station['row'],8).value is not None else 'INTERVAL REVIEW' if candidates else 'NO REPORTS'
             if len(qualified)>1:status='AMBIGUOUS ID'
             for record,url,network in candidates:
                 if not record['start']<b or not record['end']>a:continue
