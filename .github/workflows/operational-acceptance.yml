@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       storm_name:
-        description: 'Historical storm to test'
+        description: 'Historical cyclone acceptance case'
         required: true
         default: 'Hurricane Ida'
         type: string
