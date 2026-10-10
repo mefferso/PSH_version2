@@ -19,17 +19,14 @@ on:
       storm_name:
         description: "Storm name and type (e.g. Hurricane Francine)"
         required: true
-        default: "Hurricane Isaias"
         type: string
       start_utc:
         description: "First UTC date YYYY-MM-DD"
         required: true
-        default: "2026-10-08"
         type: string
       end_utc:
         description: "Last UTC date YYYY-MM-DD"
         required: true
-        default: "2026-10-09"
         type: string
       francine_regression:
         description: "Also collect and compare the completed Francine case (separate artifact)"
@@ -76,7 +73,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
   collect:
     needs: [test, francine]
-    if: always() && github.event_name != 'pull_request' && needs.test.result == 'success' && (needs.francine.result == 'success' || needs.francine.result == 'skipped')
+    if: always() && github.event_name == 'workflow_dispatch' && needs.test.result == 'success' && (needs.francine.result == 'success' || needs.francine.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -98,9 +95,9 @@ jobs:
           RAIN_END_UTC: ${{ inputs.rain_end_utc || '' }}
           PSH_IMPORT_FILE: ${{ inputs.reviewed_import || '' }}
           PSH_DATUM_REGISTRY: ${{ inputs.datum_registry || '' }}
-          STORM_NAME: ${{ inputs.storm_name || 'Hurricane Isaias' }}
-          START_UTC: ${{ inputs.start_utc || '2026-10-08' }}
-          END_UTC: ${{ inputs.end_utc || '2026-10-09' }}
+          STORM_NAME: ${{ inputs.storm_name }}
+          START_UTC: ${{ inputs.start_utc }}
+          END_UTC: ${{ inputs.end_utc }}
         run: python scripts/build.py
       - name: Validate workbook preservation and observation provenance
         run: python scripts/validate.py
@@ -133,7 +130,7 @@ jobs:
 
   francine:
     needs: test
-    if: github.event_name != 'pull_request' && (inputs.francine_regression == true)
+    if: github.event_name == 'workflow_dispatch' && inputs.francine_regression == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
