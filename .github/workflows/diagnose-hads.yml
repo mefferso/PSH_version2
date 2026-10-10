@@ -1,0 +1,25 @@
+name: Diagnose HADS archive response
+on:
+  push:
+    paths:
+      - '.github/workflows/diagnose-hads.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request one exact archived station and print only public response shape
+        run: |
+          python - <<'PY'
+          import urllib.request, urllib.parse
+          params={'stations':'ABKL1','sts':'2024-09-10T12:00Z','ets':'2024-09-12T12:00Z','what':'txt','delim':'comma'}
+          url='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py?'+urllib.parse.urlencode(params)
+          try:
+              with urllib.request.urlopen(url,timeout=40) as r:
+                  raw=r.read(2048)
+                  print('HTTP',r.status,'Content-Type',r.headers.get('content-type'))
+                  print('Archive bytes preview:',repr(raw[:1000]))
+          except Exception as ex:print('Archive request error:',type(ex).__name__,str(ex)[:220])
+          PY
