@@ -17,7 +17,7 @@ OUT=Path('output')
 
 def collectors():
     return [hourlyprecip.populate,asos1min.populate,iem.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
-            weatherstem.populate,cocorahs.populate,hads.populate,coopobs.populate,synoptic.populate_rain,tornadoes.populate,datums.populate]
+            weatherstem.populate,cocorahs.populate,synoptic.populate_rain,hads.populate,coopobs.populate,tornadoes.populate,datums.populate]
 
 def reset(wb):
     for tab,cols in [('Wind and Pressure',range(11,31)),('Rainfall',range(8,10)),('Water Level',[7,9,10,11,12,14])]:
