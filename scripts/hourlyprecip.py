@@ -89,8 +89,8 @@ def recover_missing_dry_hours(text,station,network,start,end,metar_rows):
         if not certify_dry_hour(metar_rows,t,t+dt.timedelta(hours=1)):
             return None,0
         certified.append(t)
-    appended=''.join(f"{station},{network},{t:%Y-%m-%d %H:%M},0.0\\n" for t in certified)
-    total,_,_=parse(text.rstrip('\\n')+'\\n'+appended,station,network,start,end)
+    appended=chr(10).join(f"{station},{network},{t:%Y-%m-%d %H:%M},0.0" for t in certified)
+    total,_,_=parse(text.rstrip()+chr(10)+appended+chr(10),station,network,start,end)
     return total,len(certified)
 
 def populate(wb,qc,start,end,counts,audit):
