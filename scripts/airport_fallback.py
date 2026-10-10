@@ -81,6 +81,7 @@ def populate(wb,qc,start,end,counts,audit):
                     original['direction_original_value']=direction
                     counts['synoptic_airport_peak_directions_recovered']+=1
                     direction_status='recovered exact timestamp and speed'
+                    status='REVIEW REQUIRED'
                 else:
                     direction_status='withheld: no unique exact-time speed-matched direction'
             detail=(f'Exact station {sid}; {len(rows)} time-indexed source rows; '
