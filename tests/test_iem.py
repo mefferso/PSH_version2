@@ -29,3 +29,11 @@ class IEMTests(unittest.TestCase):
         rows=iem.parse('station,valid,p01i,metar\nMSY,2024-09-11 01:00,T,METAR\n','MSY',dt.date(2024,9,11),dt.date(2024,9,11))
         self.assertIsNone(rows[0]['rain'])
         self.assertTrue(rows[0]['trace'])
+
+class RoutineMETARIdentificationTests(unittest.TestCase):
+    def test_iem_archive_metar_text_classifies_routine_without_numeric_column(self):
+        text=('station,valid,p01i,metar\n'
+              'MSY,2024-09-11 01:53,0.50,KMSY 110153Z 01005KT 10SM CLR\n'
+              'MSY,2024-09-11 02:13,0.70,SPECI KMSY 110213Z 01005KT\n')
+        rows=iem.parse(text,'MSY',dt.date(2024,9,11),dt.date(2024,9,11))
+        self.assertEqual([x['report_type'] for x in rows],[3,4])
