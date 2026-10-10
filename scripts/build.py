@@ -98,7 +98,7 @@ def build():
             'period_end_utc','reported_in','requested_start_utc','requested_end_utc',
             'classification','source_url'])
     for adapter in collectors():
-        if adapter is cocorahs.populate:
+        if adapter in (cocorahs.populate,hads.populate):
             adapter(wb,qc,start,end,counts,audit,output_dir=OUT)
         else:
             adapter(wb,qc,start,end,counts,audit)
