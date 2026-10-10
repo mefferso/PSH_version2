@@ -143,6 +143,23 @@ def precip_total(payload,station,start,end):
         return finite(value*factor,0,100) if value is not None else None
     return None
 
+def partial_precip_from_reports(payload,station,start,end):
+    """Sum disjoint source-reported accumulation intervals inside storm window."""
+    from cocorahs import observed_partial_sum
+    units=str((payload.get('UNITS') or {}).get('precipitation') or '').lower()
+    factor={'inches':1,'in':1,'millimeters':1/25.4,'mm':1/25.4}.get(units)
+    if factor is None:return None
+    reports=[]
+    for site in payload.get('STATION',[]):
+        if site.get('STID')!=station:continue
+        for x in (site.get('OBSERVATIONS') or {}).get('precipitation') or []:
+            a=timestamp(x.get('first_report'))
+            b=timestamp(x.get('last_report'))
+            value=finite(x.get('total'),0,10000)
+            if a and b and a<b and value is not None:
+                reports.append({'start':a,'end':b,'value':value*factor})
+    return observed_partial_sum(reports,start,end)
+
 def populate_rain(wb,qc,start,end,counts,audit):
     from cocorahs import rain_bounds
     from concurrent.futures import ThreadPoolExecutor
@@ -167,6 +184,18 @@ def populate_rain(wb,qc,start,end,counts,audit):
             import json
             detail+='; returned interval candidates: '+json.dumps(records,allow_nan=False)
         if payload and (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:detail+='; provider response '+str((payload.get('SUMMARY') or {}).get('RESPONSE_MESSAGE','rejected'))
+        if value is None and payload:
+            sid=('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']
+            partial=partial_precip_from_reports(payload,sid,a,b)
+            if partial:
+                amount,hours,used=partial
+                amount=round(amount,2)
+                s.cell(st['row'],8).value=amount;s.cell(st['row'],9).value='I'
+                entry=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,
+                    interval_start=a,status='INCOMPLETE',details=detail+'; observed report intervals only')
+                entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
+                counts['synoptic_rain_incomplete_populated']+=1
+                status='INCOMPLETE — POPULATED'
         if value is not None:
             s.cell(st['row'],8).value=round(value,2);s.cell(st['row'],9).value='I'
             audit.add('Rainfall',st['row'],st['id'],'rain',round(value,2),'in',b,url,interval_start=a,raw_value=value,details=detail)
