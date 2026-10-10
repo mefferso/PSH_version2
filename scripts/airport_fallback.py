@@ -6,7 +6,7 @@ inference or nearby-station substitution.
 """
 import os
 import requests
-from common import bounds, finite, inventory, public_url
+from common import bounds, finite, inventory, public_url, timestamp
 from synoptic import URL, parse
 from iem import write_wind
 
@@ -18,7 +18,8 @@ def populate(wb,qc,start,end,counts,audit):
     sheet=wb['Wind and Pressure']
     stations=[st for st in inventory(wb,'Wind and Pressure')
               if st['network'].upper() in ('ASOS','AWOS')
-              and any(sheet.cell(st['row'],col).value is None for col in (11,17,23))]
+              and (any(sheet.cell(st['row'],col).value is None for col in (11,17,23))
+                   or (sheet.cell(st['row'],11).value is not None and sheet.cell(st['row'],12).value is None))]
     token=os.environ.get('SYNOPTIC_TOKEN')
     if not token:
         for st in stations:
@@ -60,8 +61,31 @@ def populate(wb,qc,start,end,counts,audit):
                 status='REVIEW REQUIRED'
             else:
                 status='METADATA REVIEW' if any(x.get('unqualified_wind') is not None for x in rows) else 'NO DATA'
+            # A direction-only recovery must describe the same *selected*
+            # peak observation. A direction from another hour is not valid.
+            direction_status='not needed'
+            if sheet.cell(r,11).value is not None and sheet.cell(r,12).value is None:
+                original=next((x for x in audit.entries if x['tab']=='Wind and Pressure'
+                               and x['row']==r and x['variable']=='wind'),None)
+                peak_time=timestamp(original.get('time_utc')) if original else None
+                peak_speed=finite(sheet.cell(r,11).value)
+                matches=[x for x in rows if peak_time is not None and x['time']==peak_time
+                         and x.get('dir') is not None and x.get('wind') is not None
+                         and peak_speed is not None and abs(x['wind']-peak_speed)<=0.15]
+                directions={round(x['dir']) for x in matches}
+                if len(directions)==1:
+                    direction=next(iter(directions))
+                    sheet.cell(r,12).value=direction
+                    original['direction_source']='Synoptic exact-timestamp matched wind direction'
+                    original['direction_source_url']=public_url(response.url)
+                    original['direction_original_value']=direction
+                    counts['synoptic_airport_peak_directions_recovered']+=1
+                    direction_status='recovered exact timestamp and speed'
+                else:
+                    direction_status='withheld: no unique exact-time speed-matched direction'
             detail=(f'Exact station {sid}; {len(rows)} time-indexed source rows; '
                     f'originally missing: {sorted(missing)}; recovered: {sorted(eligible)}; '
+                    f'peak direction: {direction_status}; '
                     'wind requires documented averaging period; pressure requires direct sea_level_pressure; '
                     'no inferred or neighboring values.')
             qc.append(['Wind and Pressure',st['id'],st['network'],status,detail,public_url(response.url)])
