@@ -125,6 +125,21 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
                 counts['hads_incomplete_populated']+=1
             partial.extend(partial_rows(records,st['id'],a,b,url))
+        if value is None and sheet.cell(st['row'],8).value is None:
+            options=[(nearby_complete_total(items,a,b),code) for code,items in series.items()]
+            usable=[(result,code) for result,code in options if result is not None]
+            if len(usable)==1:
+                (amount,observed_start,observed_end),code=usable[0]
+                amount=round(amount,2)
+                sheet.cell(st['row'],8).value=amount
+                sheet.cell(st['row'],9).value='I'
+                entry=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,
+                    interval_start=a,status='INCOMPLETE',
+                    details=detail+'; alternate observed reporting window, review before using')
+                entry['actual_interval_start_utc']=observed_start.isoformat()
+                entry['actual_interval_end_utc']=observed_end.isoformat()
+                entry['reporting_window_mismatch']=True
+                counts['hads_shifted_window_populated']+=1
         status='REVIEW REQUIRED' if value is not None else 'ERROR' if error else 'INTERVAL REVIEW' if records else 'NO REPORTS'
         if value is None and sheet.cell(st['row'],8).value is not None:
             status='INCOMPLETE — POPULATED'
