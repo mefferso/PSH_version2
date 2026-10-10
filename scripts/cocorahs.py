@@ -150,7 +150,8 @@ def collect_export(station,start,end,session=requests):
 # Keep the explicit-metadata JSON parser available for fixtures and other clients;
 # production historical recovery uses the official GMT export contract.
 def populate(wb,qc,start,end,counts,audit):
-    import json
+    import json,csv
+    from pathlib import Path
     from concurrent.futures import ThreadPoolExecutor
     a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[st for st in inventory(wb,'Rainfall') if st['network']=='CoCoRaHS']
@@ -158,6 +159,7 @@ def populate(wb,qc,start,end,counts,audit):
         try:return st,collect_export(st['id'],a,b),None
         except (requests.RequestException,ValueError,TypeError) as e:return st,None,type(e).__name__
     with ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(fetch,stations))
+    partial=[]
     for st,data,error in results:
         value=None;url=EXPORT_URL;records=[]
         if data:
@@ -170,5 +172,25 @@ def populate(wb,qc,start,end,counts,audit):
             e['accumulation_kind']='sum_of_reported_daily_accumulations';e['reports']=candidates
         status='REVIEW REQUIRED' if value is not None else 'INTERVAL REVIEW' if candidates else 'ERROR' if error else 'NO REPORTS'
         if value is None:detail+='; no complete tiling of requested window; available reports retained for review. '+json.dumps(candidates,allow_nan=False)
+        if value is None:
+            for record in records:
+                if record.get('value') is None or record.get('end') is None:continue
+                first=record.get('start');last=record['end']
+                if last<=a or (first is not None and first>=b):continue
+                partial.append({'station_id':st['id'],'report_type':record['type'],
+                    'period_start_utc':first.isoformat() if first else '',
+                    'period_end_utc':last.isoformat(),'reported_in':record['value'],
+                    'requested_start_utc':a.isoformat(),'requested_end_utc':b.isoformat(),
+                    'classification':'PARTIAL REPORT — NOT A VERIFIED STORM TOTAL',
+                    'source_url':public_url(url)})
         if error:detail+='; request/schema failure '+error+'; not evidence of absent historical observations'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,public_url(url)]);counts['cocorahs_'+status]+=1
+
+    # Separate observed daily/multiday rain from qualified storm totals.
+    # Deliberately no arithmetic sum across partial/overlapping intervals.
+    target=Path('output/CoCoRaHS_partial_reports.csv');target.parent.mkdir(parents=True,exist_ok=True)
+    with target.open('w',newline='',encoding='utf-8') as fh:
+        fields=['station_id','report_type','period_start_utc','period_end_utc','reported_in',
+                'requested_start_utc','requested_end_utc','classification','source_url']
+        writer=csv.DictWriter(fh,fieldnames=fields);writer.writeheader();writer.writerows(partial)
+    counts['cocorahs_partial_reports']=len(partial)
