@@ -135,6 +135,15 @@ def populate(wb, qc, start, end, counts, audit=None):
         try:return site,collect(site,start,end)
         except (requests.RequestException,ValueError) as e:return site,e
     with ThreadPoolExecutor(max_workers=3) as pool:cache=dict(pool.map(fetch,ids))
+    # Request stage-only review values concurrently to avoid serial network
+    # delays for dozens of stations lacking direct vertical elevations.
+    stage_ids=[sid for sid,result in cache.items()
+               if not isinstance(result,Exception) and result[0] is None]
+    def fetch_stage(sid):
+        try:return sid,stage_peak(sid,start,end)
+        except (requests.RequestException,ValueError) as exc:return sid,exc
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        stage_cache=dict(pool.map(fetch_stage,stage_ids))
     evidence={}
     for code in PARAMETERS:
         try:evidence[code]=parameter_evidence(code)
@@ -162,14 +171,13 @@ def populate(wb, qc, start, end, counts, audit=None):
             if not peak:
                 counts["usgs_no_direct_navd88"] += 1
                 detail="Direct NAVD88 ft codes 63160/62620/62615 unavailable; 00065 stage was NOT converted"
-                try:
-                    candidate=stage_peak(usgs,start,end)
-                    if candidate:
-                        stage,when=candidate
-                        detail+=f"; MANUAL REVIEW ONLY: observed 00065 stage peak {stage:.2f} ft at {when.isoformat()} (gage height, NOT NAVD88 or inundation depth)"
-                        counts["usgs_stage_review_candidates"]+=1
-                except (requests.RequestException,ValueError) as exc:
-                    detail+="; stage review lookup unavailable: "+type(exc).__name__
+                candidate=stage_cache.get(usgs)
+                if isinstance(candidate,Exception):
+                    detail+="; stage review lookup unavailable: "+type(candidate).__name__
+                elif candidate:
+                    stage,when=candidate
+                    detail+=f"; MANUAL REVIEW ONLY: observed 00065 stage peak {stage:.2f} ft at {when.isoformat()} (gage height, NOT NAVD88 or inundation depth)"
+                    counts["usgs_stage_review_candidates"]+=1
                 qc.append(["Water Level",site,"USGS","NO DIRECT NAVD88",detail,
                            urls[0] if urls else ""])
                 continue
