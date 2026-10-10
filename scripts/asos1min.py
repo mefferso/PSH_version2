@@ -28,7 +28,9 @@ def parse(text,station,start,end,include_end=False):
         if t<a or t>b or (t==b and not include_end):continue
         rows.append({'time':t,'wind':finite(x['sknt'],0,180),'gust':finite(x['gust_sknt'],0,200),
                      'dir':finite(x['drct'],0,360),'gust_dir':finite(x['gust_drct'],0,360),
-                     'pressure':None,'rain':finite(x['precip'],0,.5)})
+                     'pressure':None,'rain':finite(x['precip'],0,.5),'raw':dict(x),
+                     'wind_averaging_period_minutes':2,'gust_averaging_period_seconds':5,
+                     'source_kind':'NOAA ASOS minute archive via IEM'})
     # Conflicting values at a timestamp invalidate the minute series.
     seen={}
     for row in rows:
@@ -84,7 +86,8 @@ def populate(wb,qc,start,end,counts,audit):
                         else:
                             audit.entries[:]=[e for e in audit.entries if (e['tab'],e['row'],e['variable'])!=(tab,st['row'],field)]
                     n=write_wind(s,st['row'],candidates,st['id'],audit,url,'NOAA/IEM two-minute average and five-second maximum; '+DOC)
-                    status='REVIEW REQUIRED' if n else 'NO ADDITIONAL PEAKS';detail+=f'; {len(rows)} samples; {n} improved extremes'
+                    status='REVIEW REQUIRED' if n else 'NO ADDITIONAL PEAKS' if rows else 'NO DATA';detail+=f'; {len(rows)} samples; {n} improved extremes'
+                    if not rows:detail+='; minute archive unavailable in requested interval; aviation reports checked by IEM fallback'
                 else:
                     total=rain_total(rows,ra,rb);status='INCOMPLETE'
                     if total is not None and s.cell(st['row'],8).value is None:
