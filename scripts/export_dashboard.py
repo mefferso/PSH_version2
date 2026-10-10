@@ -30,13 +30,14 @@ def export(out=Path('output'),site=Path('site')):
     (site/'data/latest.json').write_text(json.dumps(result,ensure_ascii=False,allow_nan=False))
     shutil.copyfile(target,site/target.name)
     with zipfile.ZipFile(site/'review-outputs.zip','w',zipfile.ZIP_DEFLATED) as z:
-        paths=[target,out/'QC.json',out/'provenance.json',out/'WeatherFlow-import-template.json',out/'Rainfall_partial_reports.csv']
+        paths=[target,out/'QC.json',out/'provenance.json',out/'WeatherFlow-import-template.json',out/'Rainfall_partial_reports.csv',out/'USGS_stage_review.csv']
         paths.extend(out/'csv'/name for name in meta.get('csv_files',[]))
         for path in paths:
             if not path.is_file():raise ValueError('Missing manifested artifact: '+str(path))
             z.write(path,path.relative_to(out))
     shutil.copyfile(out/'WeatherFlow-import-template.json',site/'WeatherFlow-import-template.json')
     shutil.copyfile(out/'Rainfall_partial_reports.csv',site/'Rainfall_partial_reports.csv')
+    shutil.copyfile(out/'USGS_stage_review.csv',site/'USGS_stage_review.csv')
     (site/'.nojekyll').write_text('')
     print(f'Dashboard: {len(book.sheetnames)} workbook tabs + provenance; {len(audit)} measurements');return result
 
