@@ -10,13 +10,13 @@ from openpyxl.cell.cell import MergedCell
 from openpyxl.styles import Font,PatternFill
 from common import Audit,inventory,bounds
 from cocorahs import rain_bounds
-import asos1min,iem,coops,ndbc,usgs,usace,synoptic,weatherstem,cocorahs,hads,tornadoes,imports,products,datums
+import asos1min,iem,hourlyprecip,coops,ndbc,usgs,usace,synoptic,weatherstem,cocorahs,hads,tornadoes,imports,products,datums
 
 TEMPLATE=Path('Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx')
 OUT=Path('output')
 
 def collectors():
-    return [iem.populate,asos1min.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
+    return [iem.populate,asos1min.populate,hourlyprecip.populate,coops.populate,ndbc.populate,usgs.populate,synoptic.populate,
             weatherstem.populate,cocorahs.populate,hads.populate,synoptic.populate_rain,tornadoes.populate,datums.populate]
 
 def reset(wb):
