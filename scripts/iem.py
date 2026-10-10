@@ -2,6 +2,7 @@
 import csv
 import datetime as dt
 import io
+import re
 import requests
 from common import UTC,bounds,finite,identifier,inventory,interval_total
 
@@ -25,6 +26,21 @@ def parse(text,station,start,end):
                      'dir':finite(raw.get('drct'),0,360),'pressure':finite(raw.get('mslp'),850,1100),
                      'rain':finite(raw.get('p01i'),0,25),'trace':raw.get('p01i')=='T',
                      'report_type':finite(raw.get('report_type')),'raw':raw})
+        # PK WND is the measured peak since the previous routine report, not
+        # the gust at METAR issuance. Preserve its own direction and occurrence.
+        match=re.search(r'\bPK WND (\d{3})(\d{2,3})/(\d{2})(\d{2})?\b',raw.get('metar') or '')
+        if match:
+            direction,speed,first,last=match.groups()
+            hour=int(first) if last is not None else t.hour
+            minute=int(last) if last is not None else int(first)
+            try:
+                peak=t.replace(hour=hour,minute=minute)
+                if peak>t:peak-=dt.timedelta(days=1) if last is not None else dt.timedelta(hours=1)
+                if begin<=peak<stop:
+                    rows.append({'time':peak,'wind':None,'gust':finite(speed,0,200),'gust_dir':finite(direction,0,360),
+                                 'pressure':None,'rain':None,'raw':raw,'gust_original_unit':'kn',
+                                 'peak_kind':'METAR PK WND remark'})
+            except ValueError:pass
     return rows
 
 def collect(station,start,end,session=requests):

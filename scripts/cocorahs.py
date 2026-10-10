@@ -52,22 +52,123 @@ def collect_station(station,start,end,session=requests):
     else:raise ValueError('CoCoRaHS incomplete pagination; series discarded')
     return reports,urls
 
+# The official export explicitly supports TimesInGMT. API2's obsDateTime
+# has a +00:00 suffix on local clock values; it is NOT used for this adapter.
+EXPORT_URL='https://data.cocorahs.org/cocorahs/export/exportreports.aspx'
+CONVENTION='https://www.cocorahs.org/Content.aspx?page=welcometococorahs'
+
+def parse_daily_export(text,station):
+    """Official Daily, English-unit export requested with TimesInGMT=True.
+
+    Daily report type establishes daily accumulation, not multiday. For LA/MS
+    inventory stations the prior local calendar day establishes the normal
+    start boundary, with DST handled by ZoneInfo. Changed/irregular observation
+    times remain review candidates rather than being stretched to match a window.
+    """
+    import csv,io
+    from zoneinfo import ZoneInfo
+    reader=csv.DictReader(io.StringIO(text))
+    if not reader.fieldnames or not {'ObservationDate','ObservationTime','StationNumber','TotalPrecipAmt'}.issubset(reader.fieldnames):
+        raise ValueError('Official daily CSV schema missing')
+    if not canonical(station).startswith(('LA-','MS-')):raise ValueError('Station timezone not established')
+    zone=ZoneInfo('America/Chicago');records=[]
+    for raw in reader:
+        raw={k:(v or '').strip() for k,v in raw.items() if k}
+        if canonical(raw.get('StationNumber'))!=canonical(station):continue
+        try:t=dt.datetime.strptime(raw['ObservationDate']+' '+raw['ObservationTime'],'%Y-%m-%d %I:%M %p').replace(tzinfo=dt.timezone.utc)
+        except ValueError:continue
+        local=t.astimezone(zone);a=(local-dt.timedelta(days=1)).astimezone(dt.timezone.utc)
+        v=finite(raw.get('TotalPrecipAmt'),0,100)
+        records.append({'start':a,'end':t,'value':v,'reported_amount':raw['TotalPrecipAmt'],
+                        'type':'daily','interval_basis':'Official Daily report type; previous local calendar day at reported observation clock; '+CONVENTION})
+    return records
+
+def export_total(records,start,end):
+    """Choose a complete nonoverlapping tiling; contradictory paths withheld."""
+    periods={}
+    for x in records:
+        a,b=x['start'],x['end']
+        if a is None or b is None or a<start or b>end:continue
+        key=(a,b);v=x['value']
+        if key in periods and periods[key]!=v:return None
+        periods[key]=v
+    # Reports need not all be used (e.g. redundant multiday vs daily observations).
+    # Never add overlapping totals; require all available complete paths to agree.
+    paths=[]
+    def visit(cursor,value,depth):
+        if depth>36:return
+        if cursor==end:paths.append(value);return
+        for (a,b),v in periods.items():
+            if a==cursor and b>a and v is not None:visit(b,value+v,depth+1)
+    visit(start,0.,0)
+    if not paths or max(paths)-min(paths)>.005:return None
+    return paths[0]
+
+def parse_multiday_export(text,station,daily):
+    """Inclusive reporting dates, actual prior daily endpoint when available.
+
+    A multiday start DATE lacks a start clock. Only an existing daily observation
+    on the immediately preceding reporting date establishes that boundary here.
+    Otherwise retain the amount/end/date in QC without inventing a start time.
+    """
+    import csv,io
+    from zoneinfo import ZoneInfo
+    reader=csv.DictReader(io.StringIO(text));zone=ZoneInfo('America/Chicago');records=[]
+    if not reader.fieldnames or not {'StartDate','EndDateTime','StationNumber','TotalPrecipAmt'}.issubset(reader.fieldnames):
+        raise ValueError('Official multiday CSV schema missing')
+    for raw in reader:
+        raw={k:(v or '').strip() for k,v in raw.items() if k}
+        if canonical(raw.get('StationNumber'))!=canonical(station):continue
+        try:
+            date=dt.date.fromisoformat(raw['StartDate'])
+            b=dt.datetime.strptime(raw['EndDateTime'],'%Y-%m-%d %I:%M %p').replace(tzinfo=dt.timezone.utc)
+        except ValueError:continue
+        prior={x['end'] for x in daily if x['end'].astimezone(zone).date()==date-dt.timedelta(days=1)}
+        a=next(iter(prior)) if len(prior)==1 else None
+        records.append({'start':a,'end':b,'value':finite(raw['TotalPrecipAmt'],0,100),
+            'reported_start_date':raw['StartDate'],'reported_amount':raw['TotalPrecipAmt'],'type':'multiday',
+            'interval_basis':'Inclusive reporting dates; start established by prior daily observation, otherwise unknown. https://media.cocorahs.org/docs/CoCoRaHS_MobileApp_User_Guide.pdf'})
+    return records
+
+def collect_export(station,start,end,session=requests):
+    r=session.get(EXPORT_URL,params={'ReportType':'Daily','Station':canonical(station),
+        'StartDate':(start-dt.timedelta(days=1)).strftime('%m/%d/%Y'),
+        'EndDate':(end+dt.timedelta(days=1)).strftime('%m/%d/%Y'),'Format':'CSV','TimesInGMT':'True'},timeout=25)
+    r.raise_for_status();records=parse_daily_export(r.text,station)
+    urls=[r.url]
+    if export_total(records,start,end) is None:
+        try:
+            params=dict(ReportType='MultiDay',Station=canonical(station),StartDate=(start-dt.timedelta(days=2)).strftime('%m/%d/%Y'),
+                        EndDate=(end+dt.timedelta(days=1)).strftime('%m/%d/%Y'),Format='CSV',TimesInGMT='True')
+            m=session.get(EXPORT_URL,params=params,timeout=25);m.raise_for_status()
+            records.extend(parse_multiday_export(m.text,station,records));urls.append(m.url)
+        except (requests.RequestException,ValueError):
+            # Preserve usable daily reports even when the alternate fails.
+            records.append({'start':None,'end':end,'value':None,'type':'multiday_request_error','interval_basis':'Alternate official multiday request/schema failed','reported_amount':None})
+    return records,urls[0]
+
+# Keep the explicit-metadata JSON parser available for fixtures and other clients;
+# production historical recovery uses the official GMT export contract.
 def populate(wb,qc,start,end,counts,audit):
+    import json
     from concurrent.futures import ThreadPoolExecutor
-    a,b=rain_bounds(start,end);s=wb['Rainfall']
+    a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[st for st in inventory(wb,'Rainfall') if st['network']=='CoCoRaHS']
     def fetch(st):
-        try:return st['id'],collect_station(st['id'],a,b)
-        except (requests.RequestException,ValueError,TypeError):return st['id'],None
-    with ThreadPoolExecutor(max_workers=6) as pool:cache=dict(pool.map(fetch,stations))
-    for st in inventory(wb,'Rainfall'):
-        if st['network']!='CoCoRaHS':continue
-        data=cache.get(st['id']);status='ERROR';detail='Official CoCoRaHS historical request unavailable; not evidence of no reports';url=URL
+        try:return st,collect_export(st['id'],a,b),None
+        except (requests.RequestException,ValueError,TypeError) as e:return st,None,type(e).__name__
+    with ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(fetch,stations))
+    for st,data,error in results:
+        value=None;url=EXPORT_URL;records=[]
         if data:
-            reports,urls=data;value=total(reports,st['id'],a,b);url=urls[0] if urls else URL
-            status='REVIEW REQUIRED' if value is not None else 'INCOMPLETE'
-            detail='Exact-ID, reported UTC and numDays; complete interval coverage required; trace reports require manual review'
-            if value is not None:
-                s.cell(st['row'],8).value=round(value,2);s.cell(st['row'],9).value='I'
-                audit.add('Rainfall',st['row'],st['id'],'rain',round(value,2),'in',b,url,interval_start=a,raw_value=value,details=detail)
+            records,url=data;value=export_total(records,a,b)
+        candidates=[dict(x,start=x['start'].isoformat() if x['start'] else None,end=x['end'].isoformat()) for x in records if x['end']>a and (x['start'] is None or x['start']<b)]
+        detail='Official English Daily CSV with TimesInGMT=True; exact station; daily report convention and local calendar boundary. '+CONVENTION
+        if value is not None:
+            value=round(value,2);sheet.cell(st['row'],8).value=value;sheet.cell(st['row'],9).value='I'
+            e=audit.add('Rainfall',st['row'],st['id'],'rain',value,'in',b,url,interval_start=a,details=detail)
+            e['accumulation_kind']='sum_of_reported_daily_accumulations';e['reports']=candidates
+        status='REVIEW REQUIRED' if value is not None else 'INTERVAL REVIEW' if candidates else 'ERROR' if error else 'NO REPORTS'
+        if value is None:detail+='; no complete tiling of requested window; available reports retained for review. '+json.dumps(candidates,allow_nan=False)
+        if error:detail+='; request/schema failure '+error+'; not evidence of absent historical observations'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,public_url(url)]);counts['cocorahs_'+status]+=1

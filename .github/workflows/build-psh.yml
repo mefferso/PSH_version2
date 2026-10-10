@@ -75,7 +75,7 @@ jobs:
       - run: pip install -r requirements.lock.txt
       - run: python -m unittest discover -s tests -v
   collect:
-    needs: test
+    needs: [test, francine]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment:
@@ -115,6 +115,11 @@ jobs:
           name: PSH-output-${{ github.run_number }}
           path: output/
           if-no-files-found: warn
+      - name: Include independently collected Francine review
+        uses: actions/download-artifact@v4
+        with:
+          name: Francine-site-${{ github.run_number }}
+          path: site/francine/
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Upload Pages site
@@ -127,7 +132,7 @@ jobs:
 
   francine:
     needs: test
-    if: github.event_name == 'workflow_dispatch' && inputs.francine_regression
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -149,6 +154,16 @@ jobs:
       - run: python scripts/validate.py
       - name: Compare source measurements to the completed reference
         run: python scripts/regression.py output/PSHLIX_2024_Hurricane_Francine_REVIEW.xlsx
+      - name: Export and validate historical dashboard and downloads
+        run: |
+          python scripts/export_dashboard.py
+          python scripts/validate.py --site
+          cp output/Francine-regression.json site/Francine-regression.json
+      - name: Upload historical Pages files
+        uses: actions/upload-artifact@v4
+        with:
+          name: Francine-site-${{ github.run_number }}
+          path: site/
       - name: Upload historical comparison and source audit
         if: always()
         uses: actions/upload-artifact@v4

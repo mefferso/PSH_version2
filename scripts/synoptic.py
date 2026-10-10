@@ -74,30 +74,48 @@ def populate(wb,qc,start,end,counts,audit):
 
 PRECIP_URL='https://api.synopticdata.com/v2/stations/precip'
 
+PRECIP_DOC='https://docs.synopticdata.com/services/precipitation-service-explained'
+PRECIP_PERIODS={'precip_accum_one_minute':1/60,'precip_accum_five_minute':5/60,
+    'precip_accum_ten_minute':10/60,'precip_accum_fifteen_minute':.25,
+    'precip_accum_one_hour':1,'precip_accum_three_hour':3,'precip_accum_six_hour':6,
+    'precip_accum_12_hour':12,'precip_accum_24_hour':24}
+
 def precip_total(payload,station,start,end):
     if (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:raise ValueError('Synoptic precipitation API rejected request')
     unit=str((payload.get('UNITS') or {}).get('precipitation') or '').lower()
     factor={'inches':1,'in':1,'millimeters':1/25.4,'mm':1/25.4}.get(unit)
     if factor is None:return None
+    from common import interval_total
     for st in payload.get('STATION',[]):
         if st.get('STID')!=station:continue
         records=(st.get('OBSERVATIONS') or {}).get('precipitation') or []
-        if len(records)!=1:continue
-        x=records[0]
-        if timestamp(x.get('first_report'))!=start or timestamp(x.get('last_report'))!=end or not finite(x.get('count'),1,100000):continue
-        # Endpoint/count aggregates do not establish complete interior coverage.
-        # Only accept explicit contiguous accumulation intervals with their own units.
-        from common import interval_total
-        intervals=x.get('intervals')
-        if not isinstance(intervals,list):continue
         readings=[]
-        for interval in intervals:
-            a=timestamp(interval.get('start_utc'));b=timestamp(interval.get('end_utc'));v=finite(interval.get('total'),0,10000)
-            if a is None or b is None or v is None:return None
+        for x in records:
+            a=timestamp(x.get('first_report'));b=timestamp(x.get('last_report'));v=finite(x.get('total'),0,10000)
+            if a is None or b is None or a>=b or v is None:return None
+            if a<start or b>end:return None
+            nested=x.get('intervals')
+            if isinstance(nested,list):
+                parts=[(timestamp(i.get('start_utc')),timestamp(i.get('end_utc')),finite(i.get('total'),0,10000)) for i in nested]
+                if any(not aa or not bb for aa,bb,vv in parts):return None
+                value=interval_total(parts,a,b)
+                if value is None or abs(value-v)>1e-6:return None
+            else:
+                # Actual native pmode=intervals records, not imaginary nested
+                # fields. Daily reports do not require minute samples. A totals
+                # aggregate with no sensor/report type is still insufficient.
+                if not finite(x.get('interval'),1,10000):return None
+                count=finite(x.get('count'),1,100000);period=PRECIP_PERIODS.get(x.get('report_type'))
+                hours=(b-a).total_seconds()/3600
+                if period is not None:
+                    if count is None or hours/period!=round(hours/period) or count<hours/period:return None
+                elif x.get('report_type')=='precip_accum':
+                    # Documented provider reconstruction of continuous counters,
+                    # explicitly labelled derived rather than a reported total.
+                    if count is None or count<2:return None
+                else:return None
             readings.append((a,b,v))
         value=interval_total(readings,start,end)
-        declared=finite(x.get('total'),0,10000)
-        if value is None or declared is None or abs(value-declared)>1e-6:continue
         return finite(value*factor,0,100) if value is not None else None
     return None
 
@@ -110,17 +128,24 @@ def populate_rain(wb,qc,start,end,counts,audit):
     def fetch(st):
         # Only canonical ASOS ICAO prefix is normalized; COOP/HADS IDs unchanged.
         sid=('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']
-        if not token:return st,None,None,'CREDENTIAL REQUIRED'
+        if not token:return st,None,None,'CREDENTIAL REQUIRED',None
         try:
             r=requests.get(PRECIP_URL,params={'token':token,'stid':sid,'start':a.strftime('%Y%m%d%H%M'),
-                'end':b.strftime('%Y%m%d%H%M'),'pmode':'totals','units':'english,precip|in','obtimezone':'UTC','all_reports':0,'complete':1},timeout=20)
+                'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day','interval_window':'0','units':'english,precip|in','obtimezone':'UTC','all_reports':0,'complete':1},timeout=20)
             r.raise_for_status();value=precip_total(r.json(),sid,a,b)
-            return st,value,public_url(r.url),'REVIEW REQUIRED' if value is not None else 'INCOMPLETE'
-        except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR'
+            return st,value,public_url(r.url),'REVIEW REQUIRED' if value is not None else 'INCOMPLETE',r.json()
+        except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR',None
     with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
-    for st,value,url,status in results:
-        detail='Exact ID and explicit units; Explicit contiguous accumulation intervals must cover the full UTC window. Aggregate endpoints/counts alone are insufficient.'
+    for st,value,url,status,payload in results:
+        detail='Exact ID and units; native Synoptic reported intervals, verified report frequency/count and nonoverlapping UTC coverage. Provider-derived amounts require review. '+PRECIP_DOC
+        records=[x for station in (payload or {}).get('STATION',[]) if station.get('STID')==(('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']) for x in (station.get('OBSERVATIONS') or {}).get('precipitation',[])]
+        if records:
+            import json
+            detail+='; returned interval candidates: '+json.dumps(records,allow_nan=False)
+        if payload and (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:detail+='; provider response '+str((payload.get('SUMMARY') or {}).get('RESPONSE_MESSAGE','rejected'))
         if value is not None:
             s.cell(st['row'],8).value=round(value,2);s.cell(st['row'],9).value='I'
             audit.add('Rainfall',st['row'],st['id'],'rain',round(value,2),'in',b,url,interval_start=a,raw_value=value,details=detail)
+            audit.entries[-1]['accumulation_kind']='provider_derived_interval_total'
+            audit.entries[-1]['reports']=records
         qc.append(['Rainfall',st['id'],st['network'],status,detail,url or PRECIP_URL]);counts['synoptic_rain_'+status]+=1
