@@ -26,7 +26,9 @@ def parse(text,station,start,end):
         rows.append({'time':t,'wind':finite(raw.get('sknt'),0,180),'gust':finite(raw.get('gust'),0,200),
                      'dir':finite(raw.get('drct'),0,360),'pressure':finite(raw.get('mslp'),850,1100),
                      'rain':finite(raw.get('p01i'),0,25),'trace':raw.get('p01i')=='T',
-                     'report_type':(4 if str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else 3 if str(raw.get('metar') or '').strip() else None),'raw':raw})
+                     'report_type':(1 if 'MADISHF' in (raw.get('metar') or '') else 4 if str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else 3 if str(raw.get('metar') or '').strip() else None),'raw':raw,
+                     'source_kind':'ASOS five-minute report' if 'MADISHF' in (raw.get('metar') or '') else 'METAR/SPECI',
+                     'wind_averaging_period_minutes':2})
         # PK WND is the measured peak since the previous routine report, not
         # the gust at METAR issuance. Preserve its own direction and occurrence.
         match=re.search(r'\bPK WND (\d{3})(\d{2,3})/(\d{2})(\d{2})?\b',raw.get('metar') or '')
@@ -50,7 +52,7 @@ def collect(station,start,end,session=requests):
             'year1':start.year,'month1':start.month,'day1':start.day,
             'year2':stop.year,'month2':stop.month,'day2':stop.day,
             'tz':'Etc/UTC','format':'onlycomma','latlon':'no','missing':'M','trace':'T','direct':'no',
-            'report_type':[3,4]}
+            'report_type':[1,3,4]}
     r=session.get(URL,params=params,timeout=30);r.raise_for_status()
     rows=parse(r.text,station,start,end)
     for row in rows:row['url']=r.url
@@ -84,6 +86,12 @@ def write_wind(sheet,r,rows,site,audit,default_url,details):
                   raw_unit=sample.get(field+'_original_unit'),status='REVIEW REQUIRED',
                   details=details+f'; {len(good)} available readings for this variable, first {min(x["time"] for x in good).isoformat()}, last {max(x["time"] for x in good).isoformat()}; no claim of complete event coverage')
         if sample.get('retrieval'):audit.entries[-1]['retrieval']=sample['retrieval']
+        if sample.get('raw'):audit.entries[-1]['source_record']=sample['raw']
+        if sample.get('source_kind'):audit.entries[-1]['source_kind']=sample['source_kind']
+        if field=='wind' and sample.get('wind_averaging_period_minutes'):
+            audit.entries[-1]['averaging_period_minutes']=sample['wind_averaging_period_minutes']
+        if field=='gust' and sample.get('gust_averaging_period_seconds'):
+            audit.entries[-1]['averaging_period_seconds']=sample['gust_averaging_period_seconds']
         written+=1
     sheet.cell(r,28).value='I';sheet.cell(r,29).value='A'
     sheet.cell(r,30).value=details+'; sampling/coverage and station exposure require review'
@@ -111,10 +119,32 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 rows,url=get(st['id']);r=st['row']
                 if tab=='Wind and Pressure':
                     wind_rows=[dict(x) for x in rows if bounds(start,end)[0]<=x['time']<bounds(start,end)[1]]
+                    comparison=[]
+                    for kind in ('METAR/SPECI','ASOS five-minute report'):
+                        good=[x for x in wind_rows if x.get('wind') is not None and x.get('source_kind')==kind]
+                        if good:
+                            peak=max(good,key=lambda x:x['wind'])
+                            comparison.append({'source_kind':kind,'value_kn':peak['wind'],
+                                'time_utc':peak['time'].isoformat(),'averaging_period_minutes':2,
+                                'source_url':url,'source_record':peak.get('raw'),'available_readings':len(good)})
                     for field,col in [('wind',11),('gust',17),('pressure',23)]:
                         if s.cell(r,col).value is not None:
-                            for sample in wind_rows:sample[field]=None
-                    n=write_wind(s,r,wind_rows,st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
+                            good=[x for x in wind_rows if x.get(field) is not None]
+                            peak=max(good,key=lambda x:x[field]) if good else None
+                            # Both minute archives and ASOS aviation reports carry
+                            # two-minute sustained wind. Sampling frequency does
+                            # not justify discarding a higher observed mean.
+                            if field=='wind' and peak and peak[field]>float(s.cell(r,col).value):
+                                audit.entries[:]=[e for e in audit.entries if not(e['tab']==tab and e['row']==r and e['variable']==field)]
+                            else:
+                                for sample in wind_rows:sample[field]=None
+                    n=write_wind(s,r,wind_rows,st['id'],audit,url,'IEM archived METAR/SPECI and five-minute ASOS reports; two-minute sustained wind; sea-level pressure only')
+                    for entry in audit.entries:
+                        if entry['tab']==tab and entry['row']==r and entry['variable']=='wind':
+                            entry['aviation_wind_comparison']=comparison
+                            entry['selection_policy']='Highest available observed two-minute sustained wind across minute archive and aviation reports; ties retain existing source priority; incomplete coverage retained for human review'
+                            summary='; '.join(f'{x["source_kind"]} peak {x["value_kn"]:g} kn at {x["time_utc"]}' for x in comparison)
+                            entry['details']+='; aviation comparison: '+(summary or 'no available sustained wind')+'; '+entry['selection_policy']
                     status='REVIEW REQUIRED' if n else 'NO DATA';detail=f'{len(rows)} samples; {n}/3 variables; UTC window'
                 else:
                     from cocorahs import rain_bounds
@@ -127,7 +157,7 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                         for sample in rows:
                             v=sample.get('rain')
                             t=sample['time']
-                            if v is None or not a<t<=b or sample.get('report_type')==4:continue
+                            if v is None or not a<t<=b or sample.get('report_type') in (1,4):continue
                             rain_partials.append({'station_id':st['id'],'report_type':'IEM METAR hourly p01i',
                                 'period_start_utc':(t-dt.timedelta(hours=1)).isoformat(),
                                 'period_end_utc':t.isoformat(),'reported_in':v,

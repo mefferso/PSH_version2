@@ -1,0 +1,25 @@
+{
+  "verified_at_utc": "2026-10-10T07:47:20.207361+00:00",
+  "test_command": "python -m unittest discover -s tests -v",
+  "tests": 143,
+  "seconds": 177.748,
+  "failures": 0,
+  "workbook_validation": "passed; 322 auditable measurements; station metadata preserved",
+  "dashboard_zip_validation": "passed; nine workbook tabs plus provenance/review tabs; no publication",
+  "selected_two_minute_winds_kn": {
+    "KBTR": 27,
+    "KMSY": 50,
+    "KNEW": 42,
+    "KPQL": 23
+  },
+  "noaa_independent_check": "three minute peaks, UTC timestamps and complete available wind counts match IEM; KBTR station-month unavailable",
+  "scope": "four stations refetched using actual production minute/aviation collectors; other Phase 3 Francine observations preserved",
+  "sha256": {
+    "source-hashes.json": "c6349b7365f54f872e670756c8d0ffabf6d070f2535208afb42e918c4a5a79e3",
+    "noaa-independent-check.json": "05947cf7cb2457083aa2ef5ca89e46b8a47b48e956772c847056adc75210e790",
+    "Francine-targeted-review-outputs.zip": "48cf9bdcd3a2ef375e725d3d7cec0488545fb5bc2d738bfeb7407769517d432c",
+    "source-records.zip": "20dbdb4203480ce612ad6181f8e4b4237946cc32a0d59ba09fe7600f0267cd6e",
+    "peaks.json": "bd31021a1fc403fd43eaf2f0d935453d70c3c406fffd828065a8b35fc9b97d34",
+    "Francine-targeted-regression.json": "d3d8052bf3007e40896915ee0c4f32ea8096b0b3bc381811d7e3786a9e116a55"
+  }
+}

@@ -1,0 +1,38 @@
+[
+  {
+    "station": "KMSY",
+    "count": 4317,
+    "peak_kn": 50,
+    "records": [
+      {
+        "time_utc": "2024-09-12T02:01:00Z",
+        "direction": 98,
+        "record": "12916KMSY MSY2024091120010201    5.335  N                               98   50   97   66     M                 "
+      }
+    ]
+  },
+  {
+    "station": "KNEW",
+    "count": 4320,
+    "peak_kn": 42,
+    "records": [
+      {
+        "time_utc": "2024-09-12T02:02:00Z",
+        "direction": 74,
+        "record": "53917KNEW NEW2024091120020202   11.530  N                               74   42   74   54                       "
+      }
+    ]
+  },
+  {
+    "station": "KPQL",
+    "count": 4176,
+    "peak_kn": 23,
+    "records": [
+      {
+        "time_utc": "2024-09-12T05:25:00Z",
+        "direction": 140,
+        "record": "53858KPQL PQL2024091123250525    1.724  N                              140   23  143   28                       "
+      }
+    ]
+  }
+]

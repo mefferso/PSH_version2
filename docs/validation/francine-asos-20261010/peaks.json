@@ -1,0 +1,414 @@
+[
+  {
+    "station": "KBTR",
+    "kind": "minute",
+    "count": 0,
+    "peak": null,
+    "records": [],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=BTR&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no"
+  },
+  {
+    "station": "KBTR",
+    "kind": "metar",
+    "count": 126,
+    "peak": 24.0,
+    "records": [
+      {
+        "time": "2024-09-12 03:05:00+00:00",
+        "wind": 24.0,
+        "gust": 38.0,
+        "dir": 10.0,
+        "pressure": null,
+        "rain": 0.01,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "BTR",
+          "valid": "2024-09-12 03:05",
+          "sknt": "24.00",
+          "gust": "38.00",
+          "drct": "10.00",
+          "mslp": "M",
+          "p01i": "0.01",
+          "metar": "KBTR 120305Z 01024G38KT 10SM -RA FEW017 BKN037 OVC045 24/22 A2951 RMK AO2 PK WND 01038/0305 P0001 T02440217"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=BTR&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=BTR&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+  },
+  {
+    "station": "KMSY",
+    "kind": "minute",
+    "count": 4317,
+    "peak": 50.0,
+    "records": [
+      {
+        "time": "2024-09-12 02:01:00+00:00",
+        "wind": 50.0,
+        "gust": 66.0,
+        "dir": 98.0,
+        "gust_dir": 97.0,
+        "pressure": null,
+        "rain": 0.04,
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=MSY&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no",
+        "noaa_original_records": [
+          "12916KMSY MSY2024091120010201    5.335  N                               98   50   97   66     M                 "
+        ],
+        "noaa_url": "https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/access/2024/09/asos-1min-pg1-KMSY-202409.dat",
+        "iem_original_records": [
+          {
+            "station": "MSY",
+            "station_name": "New Orleans - Louis Armstrong",
+            "valid(Etc/UTC)": "2024-09-12 02:01",
+            "sknt": "50",
+            "drct": "98",
+            "gust_sknt": "66",
+            "gust_drct": "97",
+            "precip": "0.04"
+          }
+        ]
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=MSY&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no"
+  },
+  {
+    "station": "KMSY",
+    "kind": "metar",
+    "count": 167,
+    "peak": 35.0,
+    "records": [
+      {
+        "time": "2024-09-12 01:53:00+00:00",
+        "wind": 35.0,
+        "gust": 51.0,
+        "dir": 100.0,
+        "pressure": 994.4,
+        "rain": 2.09,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "MSY",
+          "valid": "2024-09-12 01:53",
+          "sknt": "35.00",
+          "gust": "51.00",
+          "drct": "100.00",
+          "mslp": "994.40",
+          "p01i": "2.09",
+          "metar": "KMSY 120153Z 10035G51KT 1SM +RA BR VV009 26/25 A2936 RMK AO2 PK WND 07068/0120 SLP944 P0209 T02560250 RVRNO $"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=MSY&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      },
+      {
+        "time": "2024-09-12 02:04:00+00:00",
+        "wind": 35.0,
+        "gust": 66.0,
+        "dir": 100.0,
+        "pressure": null,
+        "rain": 0.27,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "MSY",
+          "valid": "2024-09-12 02:04",
+          "sknt": "35.00",
+          "gust": "66.00",
+          "drct": "100.00",
+          "mslp": "M",
+          "p01i": "0.27",
+          "metar": "KMSY 120204Z 10035G66KT 3/4SM +RA BKN009 OVC017 25/ A2933 RMK AO2 PK WND 10066/0201 P0027 T0250 RVRNO"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=MSY&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=MSY&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+  },
+  {
+    "station": "KNEW",
+    "kind": "minute",
+    "count": 4320,
+    "peak": 42.0,
+    "records": [
+      {
+        "time": "2024-09-12 02:02:00+00:00",
+        "wind": 42.0,
+        "gust": 54.0,
+        "dir": 74.0,
+        "gust_dir": 74.0,
+        "pressure": null,
+        "rain": 0.03,
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=NEW&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no",
+        "noaa_original_records": [
+          "53917KNEW NEW2024091120020202   11.530  N                               74   42   74   54                       "
+        ],
+        "noaa_url": "https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/access/2024/09/asos-1min-pg1-KNEW-202409.dat",
+        "iem_original_records": [
+          {
+            "station": "NEW",
+            "station_name": "NEW ORLEANS/LAKEFRO",
+            "valid(Etc/UTC)": "2024-09-12 02:02",
+            "sknt": "42",
+            "drct": "74",
+            "gust_sknt": "54",
+            "gust_drct": "74",
+            "precip": "0.03"
+          }
+        ]
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=NEW&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no"
+  },
+  {
+    "station": "KNEW",
+    "kind": "metar",
+    "count": 182,
+    "peak": 37.0,
+    "records": [
+      {
+        "time": "2024-09-12 00:12:00+00:00",
+        "wind": 37.0,
+        "gust": 51.0,
+        "dir": 80.0,
+        "pressure": null,
+        "rain": 0.18,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "NEW",
+          "valid": "2024-09-12 00:12",
+          "sknt": "37.00",
+          "gust": "51.00",
+          "drct": "80.00",
+          "mslp": "M",
+          "p01i": "0.18",
+          "metar": "KNEW 120012Z AUTO 08037G51KT 1 3/4SM VCTS +RA BR BKN009 OVC014 26/24 A2950 RMK AO2 PK WND 07051/0008 LTG DSNT SE P0018 T02560244"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NEW&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      },
+      {
+        "time": "2024-09-12 01:10:00+00:00",
+        "wind": 37.0,
+        "gust": 50.0,
+        "dir": 80.0,
+        "pressure": null,
+        "rain": 0.3,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "NEW",
+          "valid": "2024-09-12 01:10",
+          "sknt": "37.00",
+          "gust": "50.00",
+          "drct": "80.00",
+          "mslp": "M",
+          "p01i": "0.30",
+          "metar": "KNEW 120110Z AUTO 08037G50KT 3/4SM VCTS +RA BR BKN011 OVC018 26/24 A2945 RMK AO2 PK WND 07050/0110 LTG DSNT NE AND SE PRESFR P0030 T02560244"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NEW&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      },
+      {
+        "time": "2024-09-12 02:13:00+00:00",
+        "wind": 37.0,
+        "gust": 52.0,
+        "dir": 80.0,
+        "pressure": null,
+        "rain": 0.77,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "NEW",
+          "valid": "2024-09-12 02:13",
+          "sknt": "37.00",
+          "gust": "52.00",
+          "drct": "80.00",
+          "mslp": "M",
+          "p01i": "0.77",
+          "metar": "KNEW 120213Z AUTO 08037G52KT 1/2SM +RA FG VV008 26/25 A2940 RMK AO2 PK WND 07054/0202 LTG DSNT NE AND E P0077 T02610250"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NEW&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NEW&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+  },
+  {
+    "station": "KPQL",
+    "kind": "minute",
+    "count": 4176,
+    "peak": 23.0,
+    "records": [
+      {
+        "time": "2024-09-12 05:25:00+00:00",
+        "wind": 23.0,
+        "gust": 28.0,
+        "dir": 140.0,
+        "gust_dir": 143.0,
+        "pressure": null,
+        "rain": 0.01,
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=PQL&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no",
+        "noaa_original_records": [
+          "53858KPQL PQL2024091123250525    1.724  N                              140   23  143   28                       "
+        ],
+        "noaa_url": "https://www.ncei.noaa.gov/data/automated-surface-observing-system-one-minute-pg1/access/2024/09/asos-1min-pg1-KPQL-202409.dat",
+        "iem_original_records": [
+          {
+            "station": "PQL",
+            "station_name": "PASCAGOULA",
+            "valid(Etc/UTC)": "2024-09-12 05:25",
+            "sknt": "23",
+            "drct": "140",
+            "gust_sknt": "28",
+            "gust_drct": "143",
+            "precip": "0.01"
+          }
+        ]
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos1min.py?station=PQL&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&hour2=0&minute2=1&tz=Etc%2FUTC&vars=sknt&vars=drct&vars=gust_sknt&vars=gust_drct&vars=precip&sample=1min&what=download&delim=comma&gis=no"
+  },
+  {
+    "station": "KPQL",
+    "kind": "metar",
+    "count": 113,
+    "peak": 19.0,
+    "records": [
+      {
+        "time": "2024-09-12 05:28:00+00:00",
+        "wind": 19.0,
+        "gust": 34.0,
+        "dir": 140.0,
+        "pressure": null,
+        "rain": 0.06,
+        "trace": false,
+        "report_type": 3,
+        "raw": {
+          "station": "PQL",
+          "valid": "2024-09-12 05:28",
+          "sknt": "19.00",
+          "gust": "34.00",
+          "drct": "140.00",
+          "mslp": "M",
+          "p01i": "0.06",
+          "metar": "KPQL 120528Z AUTO 14019G34KT 4SM +RA BR SCT007 BKN013 OVC035 27/24 A2965 RMK AO2 PK WND 14034/0524 P0006 T02670244"
+        },
+        "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=PQL&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=PQL&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=3&report_type=4"
+  },
+  {
+    "station": "KBTR",
+    "kind": "all-aviation",
+    "count": 976,
+    "peak": 27.0,
+    "records": [
+      {
+        "station": "BTR",
+        "valid": "2024-09-12 01:00",
+        "sknt": "27.00",
+        "gust": "35.00",
+        "drct": "30.00",
+        "mslp": "M",
+        "p01i": "0.03",
+        "metar": "KBTR 120100Z AUTO 03027G35KT 6SM +RA FEW018 BKN042 OVC070 24/22 A2951 RMK P0003 T02400220 MADISHF"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=BTR&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=1&report_type=3&report_type=4"
+  },
+  {
+    "station": "KMSY",
+    "kind": "all-aviation",
+    "count": 942,
+    "peak": 43.0,
+    "records": [
+      {
+        "station": "MSY",
+        "valid": "2024-09-12 01:20",
+        "sknt": "43.00",
+        "gust": "68.00",
+        "drct": "80.00",
+        "mslp": "M",
+        "p01i": "1.10",
+        "metar": "KMSY 120120Z AUTO 08043G68KT 1/2SM +RA FG VV008 25/25 A2933 RMK P0110 T02500250 MADISHF"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=MSY&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=1&report_type=3&report_type=4"
+  },
+  {
+    "station": "KNEW",
+    "kind": "all-aviation",
+    "count": 891,
+    "peak": 37.0,
+    "records": [
+      {
+        "station": "NEW",
+        "valid": "2024-09-12 00:12",
+        "sknt": "37.00",
+        "gust": "51.00",
+        "drct": "80.00",
+        "mslp": "M",
+        "p01i": "0.18",
+        "metar": "KNEW 120012Z AUTO 08037G51KT 1 3/4SM VCTS +RA BR BKN009 OVC014 26/24 A2950 RMK AO2 PK WND 07051/0008 LTG DSNT SE P0018 T02560244"
+      },
+      {
+        "station": "NEW",
+        "valid": "2024-09-12 01:10",
+        "sknt": "37.00",
+        "gust": "50.00",
+        "drct": "80.00",
+        "mslp": "M",
+        "p01i": "0.30",
+        "metar": "KNEW 120110Z AUTO 08037G50KT 3/4SM VCTS +RA BR BKN011 OVC018 26/24 A2945 RMK AO2 PK WND 07050/0110 LTG DSNT NE AND SE PRESFR P0030 T02560244"
+      },
+      {
+        "station": "NEW",
+        "valid": "2024-09-12 02:00",
+        "sknt": "37.00",
+        "gust": "47.00",
+        "drct": "70.00",
+        "mslp": "M",
+        "p01i": "0.26",
+        "metar": "KNEW 120200Z AUTO 07037G47KT 1/2SM +RA FG VV012 26/26 A2942 RMK P0026 T02600260 MADISHF"
+      },
+      {
+        "station": "NEW",
+        "valid": "2024-09-12 02:13",
+        "sknt": "37.00",
+        "gust": "52.00",
+        "drct": "80.00",
+        "mslp": "M",
+        "p01i": "0.77",
+        "metar": "KNEW 120213Z AUTO 08037G52KT 1/2SM +RA FG VV008 26/25 A2940 RMK AO2 PK WND 07054/0202 LTG DSNT NE AND E P0077 T02610250"
+      },
+      {
+        "station": "NEW",
+        "valid": "2024-09-12 02:15",
+        "sknt": "37.00",
+        "gust": "48.00",
+        "drct": "70.00",
+        "mslp": "M",
+        "p01i": "0.87",
+        "metar": "KNEW 120215Z AUTO 07037G48KT 1/4SM +RA FG VV007 26/25 A2940 RMK P0087 T02600250  LTG DSNT NE AND E! MADISHF"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=NEW&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=1&report_type=3&report_type=4"
+  },
+  {
+    "station": "KPQL",
+    "kind": "all-aviation",
+    "count": 945,
+    "peak": 20.0,
+    "records": [
+      {
+        "station": "PQL",
+        "valid": "2024-09-12 06:05",
+        "sknt": "20.00",
+        "gust": "31.00",
+        "drct": "130.00",
+        "mslp": "M",
+        "p01i": "0.01",
+        "metar": "KPQL 120605Z AUTO 13020G31KT 10SM BKN011 BKN018 OVC080 27/24 A2961 RMK P0001 T02700240 MADISHF"
+      }
+    ],
+    "url": "https://mesonet.agron.iastate.edu/cgi-bin/request/asos.py?station=PQL&data=sknt&data=gust&data=drct&data=mslp&data=p01i&data=metar&year1=2024&month1=9&day1=10&year2=2024&month2=9&day2=13&tz=Etc%2FUTC&format=onlycomma&latlon=no&missing=M&trace=T&direct=no&report_type=1&report_type=3&report_type=4"
+  }
+]
