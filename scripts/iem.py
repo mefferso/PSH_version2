@@ -74,7 +74,7 @@ def write_wind(sheet,r,rows,site,audit,default_url,details):
         if not good:continue
         sample=(min if field=='pressure' else max)(good,key=lambda x:x[field]);value=sample[field];t=sample['time']
         sheet.cell(r,col).value=round(value,1)
-        direction=sample.get('gust_dir',sample.get('dir')) if field=='gust' else sample.get('dir')
+        direction=sample.get('gust_dir') if field=='gust' else sample.get('dir')
         if dircol and direction is not None:sheet.cell(r,dircol).value=round(direction)
         offset=col+2 if dircol else col+1
         for n,v in enumerate((t.strftime('%H%M'),t.day,t.month,t.year)):sheet.cell(r,offset+n).value=v
