@@ -107,6 +107,28 @@ def export_total(records,start,end):
     if not paths or max(paths)-min(paths)>.005:return None
     return paths[0]
 
+def nearby_complete_total(records,start,end,tolerance_hours=2):
+    """Find an independently continuous station window near requested bounds.
+
+    This is a review candidate, NOT an exact storm-period total.
+    """
+    tolerance=dt.timedelta(hours=tolerance_hours)
+    starts={r['start'] for r in records if r.get('start') is not None}
+    ends={r['end'] for r in records if r.get('end') is not None}
+    matches=[]
+    for a in starts:
+        if abs(a-start)>tolerance:continue
+        for b in ends:
+            if abs(b-end)>tolerance or b<=a:continue
+            amount=export_total(records,a,b)
+            if amount is not None:matches.append((abs(a-start)+abs(b-end),amount,a,b))
+    if not matches:return None
+    matches.sort(key=lambda item:item[0])
+    best=matches[0]
+    if any(item[0]==best[0] and abs(item[1]-best[1])>.005 for item in matches):
+        return None
+    return best[1:]
+
 def parse_multiday_export(text,station,daily):
     """Inclusive reporting dates, actual prior daily endpoint when available.
 
@@ -174,6 +196,12 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
             e=audit.add('Rainfall',st['row'],st['id'],'rain',value,'in',b,url,interval_start=a,details=detail)
             e['accumulation_kind']='sum_of_reported_daily_accumulations';e['reports']=candidates
         status='REVIEW REQUIRED' if value is not None else 'INTERVAL REVIEW' if candidates else 'ERROR' if error else 'NO REPORTS'
+        if value is None and records:
+            nearby=nearby_complete_total(records,a,b)
+            if nearby:
+                amount,obs_start,obs_end=nearby
+                detail+=f'; NEARBY COMPLETE GAUGE WINDOW (review only): {amount:.2f} inches from {obs_start.isoformat()} through {obs_end.isoformat()}, NOT exact requested storm total'
+                counts['cocorahs_nearby_complete_review']+=1
         if value is None:detail+='; no complete tiling of requested window; available reports retained for review. '+json.dumps(candidates,allow_nan=False)
         if value is None:
             for record in records:
