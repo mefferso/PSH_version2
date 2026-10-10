@@ -57,3 +57,11 @@ class PeakDirectionSafetyTests(unittest.TestCase):
         other=Workbook().active
         write_wind(other,2,rows,'TEST',Audit(),'https://example.org/','fixture')
         self.assertEqual(other.cell(2,18).value,220)
+
+class WeatherSTEMUnqualifiedSpeedTests(unittest.TestCase):
+    def test_unknown_averaging_period_keeps_anemometer_candidate_out_of_psh_wind(self):
+        meta={'id':5,'transmitters':[{'sensors':[{'id':1,'name':'Anemometer','unit':'mph'}]}]}
+        raw=[['Timestamp','Anemometer'],['2024-09-11 12:00:00',60]]
+        row=weatherstem.parse(raw,meta,dt.date(2024,9,11),dt.date(2024,9,11))[0]
+        self.assertIsNone(row['wind'])
+        self.assertAlmostEqual(row['unqualified_speed'],60*0.8689762419006479)
