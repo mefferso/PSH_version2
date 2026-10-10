@@ -110,7 +110,11 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
             try:
                 rows,url=get(st['id']);r=st['row']
                 if tab=='Wind and Pressure':
-                    n=write_wind(s,r,[x for x in rows if bounds(start,end)[0]<=x['time']<bounds(start,end)[1]],st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
+                    wind_rows=[dict(x) for x in rows if bounds(start,end)[0]<=x['time']<bounds(start,end)[1]]
+                    for field,col in [('wind',11),('gust',17),('pressure',23)]:
+                        if s.cell(r,col).value is not None:
+                            for sample in wind_rows:sample[field]=None
+                    n=write_wind(s,r,wind_rows,st['id'],audit,url,'IEM archived METAR; sea-level pressure only')
                     status='REVIEW REQUIRED' if n else 'NO DATA';detail=f'{len(rows)} samples; {n}/3 variables; UTC window'
                 else:
                     from cocorahs import rain_bounds
