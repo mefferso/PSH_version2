@@ -9,7 +9,7 @@ FACTORS={'wind_speed':{'m/s':1.9438444924406,'knots':1,'kts':1},
          'wind_gust':{'m/s':1.9438444924406,'knots':1,'kts':1},
          'sea_level_pressure':{'Pa':0.01,'Pascals':0.01,'hPa':1,'mb':1}}
 
-def parse(payload,station,start,end):
+def parse(payload,station,start,end,network=None):
     if (payload.get('SUMMARY') or {}).get('RESPONSE_CODE')!=1:raise ValueError('Synoptic API rejected request')
     a,b=bounds(start,end);units=payload.get('UNITS') or {};rows=[]
     for st in payload.get('STATION',[]):
@@ -33,9 +33,16 @@ def parse(payload,station,start,end):
             sensors=(st.get('SENSOR_VARIABLES') or {}).get('wind_speed') or {}
             descriptions=[v for k,v in sensors.items() if k.startswith('wind_speed_set_') and isinstance(v,dict)]
             period=finite(descriptions[0].get('averaging_period_minutes')) if len(descriptions)==1 else None
-            if period not in (1,2,8,10):
+            if period in (1,2,8,10):
+                row['wind_averaging_period_minutes']=period
+                row['wind_period_basis']='explicit station sensor metadata'
+            elif period is None and str(network or '').upper()=='CWOP' and row.get('wind') is not None and not row.get('wind_qc'):
+                # APRS weather packet s field is a nominal one-minute sustained
+                # wind. The station's own sampling configuration is unverified.
+                row['wind_averaging_period_minutes']=1
+                row['wind_period_basis']='APRS CWOP 1-minute convention; station-specific averaging unverified; review required'
+            else:
                 row['unqualified_wind']=row.get('wind');row['wind']=None
-            else:row['wind_averaging_period_minutes']=period
             directions=series('wind_direction')
             row['dir']=finite(directions[n],0,360) if n<len(directions) and units.get('wind_direction') in ('Degrees','degrees') else None
             rows.append(row)
@@ -56,11 +63,24 @@ def populate(wb,qc,start,end,counts,audit):
             a,b=bounds(start,end)
             r=requests.get(URL,params={'token':token,'stid':st['id'],'start':a.strftime('%Y%m%d%H%M'),
                 'end':b.strftime('%Y%m%d%H%M'),'vars':'wind_speed,wind_gust,wind_direction,sea_level_pressure','obtimezone':'utc'},timeout=20)
-            r.raise_for_status();rows=parse(r.json(),st['id'],start,end)
-            n=write_wind(wb['Wind and Pressure'],st['row'],rows,st['id'],audit,r.url,'Synoptic exact-ID sensor; unit-qualified; MSLP only')
+            r.raise_for_status();rows=parse(r.json(),st['id'],start,end,network=st['network'])
+            from common import public_url
+            qualified=[x for x in rows if x.get('wind') is not None]
+            inferred=[x for x in qualified if 'convention' in x.get('wind_period_basis','')]
+            basis='APRS weather format convention (nominal 1-minute), station averaging not independently verified; ' if inferred else ''
+            n=write_wind(wb['Wind and Pressure'],st['row'],rows,st['id'],audit,public_url(r.url),
+                         'Synoptic exact-ID sensor; '+basis+'unit-qualified; MSLP only')
+            if inferred:
+                for entry in audit.entries:
+                    if entry['tab']=='Wind and Pressure' and entry['row']==st['row'] and entry['variable']=='wind':
+                        entry['averaging_period_minutes']=1
+                        entry['averaging_period_basis']='CWOP APRS convention, not confirmed sensor configuration'
+                        entry['status']='REVIEW REQUIRED'
+                        break
             from common import public_url
             candidates=[x for x in rows if x.get('unqualified_wind') is not None]
-            detail=f'{len(rows)} samples; {n}/3 qualified variables. Sustained wind requires explicit 1/2/8/10-minute averaging metadata.'
+            detail=f'{len(rows)} samples; {n}/3 variables. Explicit station averaging metadata used when available.'
+            if inferred:detail+=' CWOP wind populated using nominal APRS 1-minute convention; actual station averaging period requires review.'
             inconsistent=sum(bool(x.get('wind_qc')) for x in rows)
             if inconsistent:detail+=f' {inconsistent} records flagged for inconsistent gust/speed; see source.'
             if candidates:
