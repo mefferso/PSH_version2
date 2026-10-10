@@ -17,14 +17,14 @@ def metadata(station_id=1313):
 class WeatherSTEMNativeTests(unittest.TestCase):
     def test_maximum_native_anemometer_without_rolling_average(self):
         raw=[['Timestamp','Anemometer','10 Minute Wind Gust','Wind Vane'],
-             ['2024-09-11T00:00:00+00:00',30,40,90],
-             ['2024-09-11T00:01:00+00:00',54,60,None],
-             ['2024-09-11T00:02:00+00:00',30,55,100]]
+             ['2024-09-11T00:10:00+00:00',30,40,90],
+             ['2024-09-11T00:11:00+00:00',54,60,None],
+             ['2024-09-11T00:12:00+00:00',30,55,100]]
         rows=weatherstem.parse(raw,metadata(),dt.date(2024,9,11),dt.date(2024,9,11))
         peak=max(rows,key=lambda r:r['wind'] or -1)
         self.assertAlmostEqual(peak['wind'],54*weatherstem.FACTORS['mph'])
         self.assertEqual(peak['dir'],90)
-        self.assertEqual(peak['direction_time_utc'],'2024-09-11T00:00:00+00:00')
+        self.assertEqual(peak['direction_time_utc'],'2024-09-11T00:10:00+00:00')
         self.assertAlmostEqual(max(x['gust'] for x in rows if x['gust'] is not None),60*weatherstem.FACTORS['mph'])
         self.assertEqual(peak['wind_averaging_period_basis'],'unverified native Anemometer average')
     def test_exact_station_id_and_sensor_request(self):
