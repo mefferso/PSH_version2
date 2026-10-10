@@ -8,7 +8,6 @@ not interpreted as event totals. All partial series remain QC context.
 import csv
 import datetime as dt
 import io
-from concurrent.futures import ThreadPoolExecutor
 import requests
 from common import inventory, finite, timestamp, public_url
 from cocorahs import rain_bounds, export_total
@@ -17,7 +16,9 @@ URL='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py'
 DOC='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py?help='
 
 def parse(text, station):
-    reader=csv.DictReader(io.StringIO(text))
+    # IEM CSV exports may prepend explanatory comment lines.
+    lines=[line for line in text.splitlines() if line.strip() and not line.lstrip().startswith('#')]
+    reader=csv.DictReader(io.StringIO('\n'.join(lines)))
     fields=reader.fieldnames or []
     station_key=next((x for x in fields if x.strip().lower() in ('station','site','stid')),None)
     time_key=next((x for x in fields if x.strip().lower() in ('valid','valid[utc]','utc','timestamp')),None)
@@ -42,15 +43,26 @@ def parse(text, station):
 def populate(wb,qc,start,end,counts,audit):
     a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[st for st in inventory(wb,'Rainfall') if st['network'].upper() in ('HADS','COOP') and sheet.cell(st['row'],8).value is None]
-    def fetch(st):
-        try:
-            response=requests.get(URL,params={'stations':st['id'],'sts':(a-dt.timedelta(days=1)).strftime('%Y-%m-%dT%H:%MZ'),
-                'ets':(b+dt.timedelta(days=1)).strftime('%Y-%m-%dT%H:%MZ'),'what':'txt','delim':'comma'},timeout=35)
-            response.raise_for_status()
-            return st,parse(response.text,st['id']),public_url(response.url),None
-        except (requests.RequestException,ValueError,TypeError) as e:
-            return st,[],URL,type(e).__name__
-    with ThreadPoolExecutor(max_workers=3) as pool:results=list(pool.map(fetch,stations))
+    # The IEM backend explicitly throttles simultaneous requests from one IP.
+    # Its documented CSV station-list option allows one small historical
+    # retrieval for every exact inventory ID, instead of dozens of requests.
+    results=[]
+    if not stations:return
+    try:
+        response=requests.get(URL,params={'stations':','.join(st['id'] for st in stations),
+            'sts':(a-dt.timedelta(days=1)).strftime('%Y-%m-%dT%H:%MZ'),
+            'ets':(b+dt.timedelta(days=1)).strftime('%Y-%m-%dT%H:%MZ'),
+            'what':'txt','delim':'comma'},timeout=90)
+        response.raise_for_status()
+        url=public_url(response.url)
+        for st in stations:
+            try:results.append((st,parse(response.text,st['id']),url,None))
+            except (ValueError,TypeError) as exc:results.append((st,[],url,str(exc)))
+    except requests.RequestException as exc:
+        error=type(exc).__name__
+        if getattr(exc,'response',None) is not None:
+            error+=' HTTP '+str(exc.response.status_code)
+        results=[(st,[],URL,error) for st in stations]
     for st,records,url,error in results:
         # Different SHEF source codes are not interchangeable; do not
         # double-count parallel radio/observer feeds for a station.
