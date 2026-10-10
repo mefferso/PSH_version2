@@ -1,4 +1,5 @@
 name: One-time PSH observed-data policy release
+# Retry after fixing duplicate ASOS source provenance.
 on:
   push:
     paths: ['.github/workflows/observed-data-release.yml']
