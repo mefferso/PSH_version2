@@ -40,7 +40,7 @@ def parse(raw,metadata,start,end):
             try:t=dt.datetime.fromisoformat(str(rawtime)).replace(tzinfo=UTC)
             except ValueError:continue
         if not a<=t<b:continue
-        row={'time':t,'wind':None,'gust':None,'pressure':None,'dir':None,'gust_dir':None}
+        row={'time':t,'wind':None,'gust':None,'pressure':None,'dir':None,'gust_dir':None,'unqualified_speed':None}
         for name,meta in known.items():
             if not meta:continue
             n=str(name).lower();v=finite(record.get(name));unit=meta.get('unit')
@@ -48,6 +48,7 @@ def parse(raw,metadata,start,end):
             if n=='anemometer' and unit in FACTORS:
                 period=finite(meta.get('averaging_period_minutes'),1,10)
                 if period in (1,2,8,10) and t-dt.timedelta(minutes=period)>=a:row['wind']=finite(v*FACTORS[unit],0,180)
+                else:row['unqualified_speed']=finite(v*FACTORS[unit],0,180)
             elif re.fullmatch(r'10\s*minute\s*wind\s*gust',n) and unit in FACTORS:
                 if t-dt.timedelta(minutes=10)>=a:row['gust']=finite(v*FACTORS[unit],0,200)
             elif n=='wind vane' and unit in ('degrees','Degrees','deg','&deg;'):row['dir']=finite(v,0,360)
@@ -87,6 +88,11 @@ def populate(wb,qc,start,end,counts,audit):
                 'WeatherSTEM exact sensor; explicit units/averaging required; metadata '+meta)
             status='REVIEW REQUIRED' if n else 'METADATA REVIEW'
             detail=f'{len(rows)} samples; {n}/3 variables. Unsupported pressure and sustained-period metadata left blank. Rainfall sensor/window unvalidated.'
+            candidates=[x for x in rows if x.get('unqualified_speed') is not None]
+            if candidates:
+                best=max(candidates,key=lambda x:x['unqualified_speed'])
+                detail+=f"; unqualified anemometer maximum {best['unqualified_speed']:.1f} kt at {best['time'].isoformat()} (NOT a verified sustained wind; averaging period unknown)"
+                counts['weatherstem_unqualified_speed_candidates']+=1
         except (requests.RequestException,ValueError,KeyError,TypeError):
             status='ERROR';detail='Exact WeatherSTEM metadata/archive request or schema unavailable; no nearby fallback'
         qc.append(['Wind and Pressure',st['id'],st['network'],status,detail,st['url']]);counts['weatherstem_'+status]+=1
