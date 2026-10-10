@@ -11,7 +11,7 @@ import io
 from pathlib import Path
 import requests
 from common import inventory, finite, timestamp, public_url
-from cocorahs import rain_bounds, export_total, nearby_complete_total
+from cocorahs import rain_bounds, export_total, nearby_complete_total, observed_partial_sum
 
 URL='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py'
 DOC='https://mesonet.agron.iastate.edu/cgi-bin/request/hads.py?help='
@@ -108,7 +108,23 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 interval_start=a,details=detail+'; qualified SHEF code '+used)
             entry['accumulation_kind']='sum_of_SHEF_PPD_24h'
             entry['reports']=[dict(item,start=item['start'].isoformat(),end=item['end'].isoformat()) for item in series[used]]
-        if value is None:partial.extend(partial_rows(records,st['id'],a,b,url))
+        if value is None:
+            options=[]
+            for source_code,items in series.items():
+                result=observed_partial_sum(items,a,b)
+                if result:options.append((result[1],source_code,result))
+            options.sort(reverse=True)
+            if options:
+                covered,code,(amount,hours,used)=options[0]
+                amount=round(amount,2)
+                sheet.cell(st['row'],8).value=amount
+                sheet.cell(st['row'],9).value='I'
+                entry=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,
+                    interval_start=a,status='INCOMPLETE',
+                    details=detail+'; observed subset only; source '+code)
+                entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
+                counts['hads_incomplete_populated']+=1
+            partial.extend(partial_rows(records,st['id'],a,b,url))
         status='REVIEW REQUIRED' if value is not None else 'ERROR' if error else 'INTERVAL REVIEW' if records else 'NO REPORTS'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,url]);counts['hads_'+status]+=1
 
