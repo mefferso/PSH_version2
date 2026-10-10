@@ -89,6 +89,43 @@ def collect(site, start, end, session=requests):
         if readings:return max(readings,key=lambda x:x[0]),urls
     return None,urls
 
+def parse_stage_candidates(payload,site,start,end):
+    """Reported stage (00065) in feet; NEVER a NAVD88 elevation."""
+    values=[]
+    for feature in payload.get('features',[]):
+        p=feature.get('properties') or {}
+        if p.get('monitoring_location_id')!='USGS-'+site:continue
+        if str(p.get('parameter_code'))!='00065':continue
+        if str(p.get('unit_of_measure') or '').lower() not in ('ft','feet','foot'):continue
+        try:
+            value=float(p['value'])
+            moment=dt.datetime.fromisoformat(str(p['time']).replace('Z','+00:00'))
+            if moment.tzinfo is None or not math.isfinite(value):continue
+            moment=moment.astimezone(dt.timezone.utc)
+        except (ValueError,TypeError,KeyError,OverflowError):continue
+        if -100<value<200 and start<=moment.date()<=end:
+            values.append((value,moment))
+    return values
+
+def stage_peak(site,start,end,session=requests):
+    params={'f':'json','monitoring_location_id':'USGS-'+site,
+        'parameter_code':'00065',
+        'time':f'{start.isoformat()}T00:00:00Z/{end.isoformat()}T23:59:59Z',
+        'limit':10000,'skipGeometry':'true'}
+    readings=[];url=BASE
+    for page in range(12):
+        r=session.get(url,params=params if page==0 else None,timeout=20,headers=request_headers())
+        r.raise_for_status();payload=r.json()
+        if payload.get('type')!='FeatureCollection':raise ValueError('Unexpected USGS stage response')
+        readings.extend(parse_stage_candidates(payload,site,start,end))
+        nexts=[x.get('href') for x in payload.get('links',[]) if x.get('rel')=='next']
+        if not nexts:break
+        url=nexts[0]
+        if not url.startswith('https://api.waterdata.usgs.gov/'):
+            raise ValueError('Unsafe stage pagination URL')
+    else:raise ValueError('USGS stage pagination incomplete')
+    return max(readings,key=lambda x:x[0]) if readings else None
+
 def populate(wb, qc, start, end, counts, audit=None):
     from concurrent.futures import ThreadPoolExecutor
     sheet = wb["Water Level"]
@@ -124,8 +161,16 @@ def populate(wb, qc, start, end, counts, audit=None):
             peak,urls=result
             if not peak:
                 counts["usgs_no_direct_navd88"] += 1
-                qc.append(["Water Level",site,"USGS","NO DIRECT NAVD88",
-                           "Direct NAVD88 ft codes 63160/62620/62615 unavailable; 00065 stage was NOT converted",
+                detail="Direct NAVD88 ft codes 63160/62620/62615 unavailable; 00065 stage was NOT converted"
+                try:
+                    candidate=stage_peak(usgs,start,end)
+                    if candidate:
+                        stage,when=candidate
+                        detail+=f"; MANUAL REVIEW ONLY: observed 00065 stage peak {stage:.2f} ft at {when.isoformat()} (gage height, NOT NAVD88 or inundation depth)"
+                        counts["usgs_stage_review_candidates"]+=1
+                except (requests.RequestException,ValueError) as exc:
+                    detail+="; stage review lookup unavailable: "+type(exc).__name__
+                qc.append(["Water Level",site,"USGS","NO DIRECT NAVD88",detail,
                            urls[0] if urls else ""])
                 continue
             value, moment, meta = peak
