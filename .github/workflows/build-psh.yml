@@ -76,7 +76,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
   collect:
     needs: [test, francine]
-    if: github.event_name != 'pull_request'
+    if: always() && github.event_name != 'pull_request' && needs.test.result == 'success' && (needs.francine.result == 'success' || needs.francine.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -116,6 +116,7 @@ jobs:
           path: output/
           if-no-files-found: warn
       - name: Include independently collected Francine review
+        if: needs.francine.result == 'success'
         uses: actions/download-artifact@v4
         with:
           name: Francine-site-${{ github.run_number }}
@@ -132,7 +133,7 @@ jobs:
 
   francine:
     needs: test
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && (github.event_name == 'push' || inputs.francine_regression == true)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
