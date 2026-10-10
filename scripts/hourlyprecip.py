@@ -35,6 +35,27 @@ def parse(text,station,network,start,end):
     total=interval_total([(a,b,v) for (a,b),v in intervals.items()],start,end)
     return total,len(intervals),trace_count
 
+def coverage_details(text,station,network,start,end):
+    """Report actual observed intervals and gaps without inventing zeros."""
+    reader=csv.DictReader(io.StringIO(text));hours={}
+    for row in reader:
+        if str(row.get('station','')).upper()!=station.upper() or row.get('network')!=network:continue
+        try:t=dt.datetime.strptime(row['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=dt.timezone.utc)
+        except (ValueError,KeyError,TypeError):continue
+        if not start<=t<end:continue
+        v=finite(row.get('precip_in'),0,100)
+        if v is None:continue
+        if t in hours and hours[t]!=v:raise ValueError('Conflicting hourly values')
+        hours[t]=v
+    expected=int((end-start).total_seconds()/3600)
+    present=len(hours)
+    missing=[(start+dt.timedelta(hours=i)).isoformat() for i in range(expected)
+             if start+dt.timedelta(hours=i) not in hours]
+    # Partial measured accumulation is a lower bound, never a 48h total.
+    observed=sum(v for v in hours.values() if v!=0.0001)
+    return {'observed_hours':present,'expected_hours':expected,
+            'missing_hours_utc':missing,'observed_sum_inches':round(observed,2)}
+
 def populate(wb,qc,start,end,counts,audit):
     a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[x for x in inventory(wb,'Rainfall') if x['network'].upper() in ('ASOS','AWOS')
@@ -61,7 +82,9 @@ def populate(wb,qc,start,end,counts,audit):
             try:total,count,traces=parse(body,sid,network,a,b)
             except (ValueError,TypeError) as exc:
                 findings.append(network+' '+type(exc).__name__);continue
-            if count:findings.append(f'{network}: {count} hourly reports, {traces} traces')
+            if count:
+                details=coverage_details(body,sid,network,a,b)
+                findings.append(f"{network}: {count}/{details['expected_hours']} hours, {traces} traces, reported-hours sum {details['observed_sum_inches']:.2f} in (INCOMPLETE where gaps exist); first missing UTC {details['missing_hours_utc'][:6]}")
             if total is not None:qualified.append((network,total,url,count,traces))
         status='INCOMPLETE';detail='Processed IEM hourly precipitation; full continuous UTC hourly coverage required. '+ '; '.join(findings)
         if len(qualified)==1:
