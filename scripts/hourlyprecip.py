@@ -145,6 +145,14 @@ def populate(wb,qc,start,end,counts,audit):
                       interval_start=a,raw_value=value,details=detail+f'; qualified network {network}; trace sentinel 0.0001 in')
             counts['iem_hourly_rain_collected']+=1
             status='REVIEW REQUIRED'
+        elif not qualified and len(available)==1:
+            hours,amount,network,url,info=available[0]
+            amount=round(amount,2)
+            sheet.cell(st['row'],8).value=amount
+            sheet.cell(st['row'],9).value='I'
+            audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,interval_start=a,status='INCOMPLETE',details=detail)
+            counts['iem_hourly_incomplete_populated']+=1
+            status='INCOMPLETE — POPULATED'
         elif len(qualified)>1:
             detail+='; ambiguous station in multiple networks; withheld'
             counts['iem_hourly_rain_ambiguous']+=1
