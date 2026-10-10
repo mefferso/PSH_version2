@@ -155,7 +155,7 @@ def populate_rain(wb,qc,start,end,counts,audit):
         if not token:return st,None,None,'CREDENTIAL REQUIRED',None
         try:
             r=requests.get(PRECIP_URL,params={'token':token,'stid':sid,'start':a.strftime('%Y%m%d%H%M'),
-                'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day','interval_window':'0','units':'english,precip|in','obtimezone':'UTC','all_reports':0,'complete':1},timeout=20)
+                'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day','interval_window':'0','units':'english,precip|in','obtimezone':'UTC','all_reports':1,'complete':0},timeout=20)
             r.raise_for_status();value=precip_total(r.json(),sid,a,b)
             return st,value,public_url(r.url),'REVIEW REQUIRED' if value is not None else 'INCOMPLETE',r.json()
         except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR',None
