@@ -86,6 +86,14 @@ class HadsSHEFRecoveryTests(unittest.TestCase):
         self.assertEqual(cocorahs.export_total(rows,a,b),5.5)
         self.assertIsNone(cocorahs.export_total(rows[:1],a,b))
 
+    def test_captured_live_iem_utc_valid_shef_header(self):
+        import hads
+        sample='station,utc_valid,HGIRGZZ,PCIRGZZ,PPDRWZZ,PPHRGZZ\nABKL1,2024-09-11 12:00:00,4.15,35.22,2.10,0.0\nABKL1,2024-09-12 12:00:00,4.15,35.22,3.40,0.0\n'
+        a=dt.datetime(2024,9,10,12,tzinfo=UTC);b=a+dt.timedelta(days=2)
+        records=hads.parse(sample,'ABKL1')
+        self.assertEqual(len(records),2)
+        self.assertAlmostEqual(cocorahs.export_total(records,a,b),5.5)
+
     def test_cumulative_counter_not_storm_total(self):
         import hads
         self.assertEqual(hads.parse('station,valid,PCIRGZZ\nTEST,2024-09-11 12:00,20\n','TEST'),[])
