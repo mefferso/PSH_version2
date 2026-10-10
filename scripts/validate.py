@@ -92,13 +92,13 @@ def validate_site(out=Path('output'),site=Path('site')):
     with tempfile.TemporaryDirectory() as d:
         expected=export(out,Path(d))
         if payload!=expected:raise ValueError('Dashboard workbook values differ')
-    files=[meta['workbook'],'QC.json','provenance.json','WeatherFlow-import-template.json','CoCoRaHS_partial_reports.csv']+['csv/'+n for n in meta['csv_files']]
+    files=[meta['workbook'],'QC.json','provenance.json','WeatherFlow-import-template.json','Rainfall_partial_reports.csv']+['csv/'+n for n in meta['csv_files']]
     with zipfile.ZipFile(site/'review-outputs.zip') as z:
         if sorted(z.namelist())!=sorted(files):raise ValueError('Archive contains unrelated/missing files')
         for name in files:
             if z.read(name)!=(out/name).read_bytes():raise ValueError('Archive content mismatch')
     if (site/meta['workbook']).read_bytes()!=(out/meta['workbook']).read_bytes():raise ValueError('Workbook download mismatch')
-    if (site/'CoCoRaHS_partial_reports.csv').read_bytes()!=(out/'CoCoRaHS_partial_reports.csv').read_bytes():raise ValueError('CoCoRaHS partial download mismatch')
+    if (site/'Rainfall_partial_reports.csv').read_bytes()!=(out/'Rainfall_partial_reports.csv').read_bytes():raise ValueError('CoCoRaHS partial download mismatch')
     print('Validated dashboard tabs and storm-specific downloads')
 
 if __name__=='__main__':
