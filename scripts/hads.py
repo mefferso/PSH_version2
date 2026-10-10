@@ -8,6 +8,7 @@ not interpreted as event totals. All partial series remain QC context.
 import csv
 import datetime as dt
 import io
+from pathlib import Path
 import requests
 from common import inventory, finite, timestamp, public_url
 from cocorahs import rain_bounds, export_total
@@ -42,7 +43,20 @@ def parse(text, station):
                 'type':'SHEF_'+key,'interval_basis':'IEM UTC valid time, SHEF PPD 24-hour duration'})
     return records
 
-def populate(wb,qc,start,end,counts,audit):
+def partial_rows(records,station,start,end,url):
+    rows=[]
+    for item in records:
+        first,last=item['start'],item['end']
+        if first>=end or last<=start:continue
+        rows.append({'station_id':station,'report_type':item['type'],
+            'period_start_utc':first.isoformat(),'period_end_utc':last.isoformat(),
+            'reported_in':item['value'],'requested_start_utc':start.isoformat(),
+            'requested_end_utc':end.isoformat(),
+            'classification':'PARTIAL REPORT — NOT A VERIFIED STORM TOTAL',
+            'source_url':url})
+    return rows
+
+def populate(wb,qc,start,end,counts,audit,output_dir=None):
     a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[st for st in inventory(wb,'Rainfall') if st['network'].upper() in ('HADS','COOP') and sheet.cell(st['row'],8).value is None]
     # The IEM backend explicitly throttles simultaneous requests from one IP.
@@ -65,6 +79,7 @@ def populate(wb,qc,start,end,counts,audit):
         if getattr(exc,'response',None) is not None:
             error+=' HTTP '+str(exc.response.status_code)
         results=[(st,[],URL,error) for st in stations]
+    partial=[]
     for st,records,url,error in results:
         # Different SHEF source codes are not interchangeable; do not
         # double-count parallel radio/observer feeds for a station.
@@ -86,5 +101,16 @@ def populate(wb,qc,start,end,counts,audit):
                 interval_start=a,details=detail+'; qualified SHEF code '+used)
             entry['accumulation_kind']='sum_of_SHEF_PPD_24h'
             entry['reports']=[dict(item,start=item['start'].isoformat(),end=item['end'].isoformat()) for item in series[used]]
+        if value is None:partial.extend(partial_rows(records,st['id'],a,b,url))
         status='REVIEW REQUIRED' if value is not None else 'ERROR' if error else 'INTERVAL REVIEW' if records else 'NO REPORTS'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,url]);counts['hads_'+status]+=1
+
+    # Append candidates to the shared rainfall-partials CSV written by CoCoRaHS.
+    if partial:
+        target=(Path(output_dir) if output_dir is not None else Path('output'))/'CoCoRaHS_partial_reports.csv'
+        with target.open('a',newline='',encoding='utf-8') as fh:
+            writer=csv.DictWriter(fh,fieldnames=['station_id','report_type','period_start_utc',
+                'period_end_utc','reported_in','requested_start_utc','requested_end_utc',
+                'classification','source_url'])
+            writer.writerows(partial)
+    counts['hads_partial_reports']=len(partial)
