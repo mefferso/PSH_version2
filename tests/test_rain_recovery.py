@@ -97,3 +97,15 @@ class HadsSHEFRecoveryTests(unittest.TestCase):
     def test_cumulative_counter_not_storm_total(self):
         import hads
         self.assertEqual(hads.parse('station,valid,PCIRGZZ\nTEST,2024-09-11 12:00,20\n','TEST'),[])
+
+class HadsPartialCandidateTests(unittest.TestCase):
+    def test_partial_shef_reports_preserve_exact_period_and_station(self):
+        import hads
+        a=dt.datetime(2024,9,10,12,tzinfo=UTC)
+        b=a+dt.timedelta(days=2)
+        records=hads.parse('station,utc_valid,PPDRWZZ\nABKL1,2024-09-11 12:00:00,1.5\nABKL1,2024-09-14 12:00:00,2.0\n','ABKL1')
+        candidates=hads.partial_rows(records,'ABKL1',a,b,'https://example.org/')
+        self.assertEqual(len(candidates),1)
+        self.assertEqual(candidates[0]['reported_in'],1.5)
+        self.assertEqual(candidates[0]['period_start_utc'],a.isoformat())
+        self.assertIn('NOT A VERIFIED STORM TOTAL',candidates[0]['classification'])
