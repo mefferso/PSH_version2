@@ -1,8 +1,7 @@
 """Exact linked WeatherSTEM historical sensor retrieval with metadata unit gates.
 
-The public form contract follows mefferso/PSH_project. Responses without explicit
-units/averaging metadata are withheld; max-minute samples are not relabelled as
-PSH sustained winds merely because they match an issued reference.
+The public form contract follows mefferso/PSH_project. Native minute Anemometer readings retained as review candidates following the
+historically tested v0.10 PSH approach, without assuming a one-minute mean.
 """
 import datetime as dt
 import re
@@ -47,8 +46,10 @@ def parse(raw,metadata,start,end):
             if v is None:continue
             if n=='anemometer' and unit in FACTORS:
                 period=finite(meta.get('averaging_period_minutes'),1,10)
-                if period in (1,2,8,10) and t-dt.timedelta(minutes=period)>=a:row['wind']=finite(v*FACTORS[unit],0,180)
-                else:row['unqualified_speed']=finite(v*FACTORS[unit],0,180)
+                row['wind']=finite(v*FACTORS[unit],0,180)
+                row['wind_averaging_period_minutes']=period
+                row['wind_averaging_period_basis']='explicit station metadata' if period in (1,2,8,10) else 'unverified native Anemometer average'
+                row['wind_sensor_id']=meta.get('id')
             elif re.fullmatch(r'10\s*minute\s*wind\s*gust',n) and unit in FACTORS:
                 if t-dt.timedelta(minutes=10)>=a:row['gust']=finite(v*FACTORS[unit],0,200)
             elif n=='wind vane' and unit in ('degrees','Degrees','deg','&deg;'):row['dir']=finite(v,0,360)
@@ -59,6 +60,13 @@ def parse(raw,metadata,start,end):
                 if meta and str(name).lower() in names and row[field] is not None:
                     row[field+'_original_value']=finite(record.get(name));row[field+'_original_unit']=meta['unit']
         rows.append(row)
+    directions=[x for x in rows if x['dir'] is not None]
+    for row in rows:
+        if row['wind'] is None or row['dir'] is not None or not directions:continue
+        closest=min(directions,key=lambda x:(abs((x['time']-row['time']).total_seconds()),x['time']))
+        if abs((closest['time']-row['time']).total_seconds())<=300:
+            row['dir']=closest['dir']
+            row['direction_time_utc']=closest['time'].isoformat()
     return rows
 
 def collect(link,start,end,session=requests):
@@ -86,8 +94,20 @@ def populate(wb,qc,start,end,counts,audit):
             rows,meta=collect(st['url'],start,end)
             n=write_wind(wb['Wind and Pressure'],st['row'],rows,st['id'],audit,st['url'],
                 'WeatherSTEM exact sensor; explicit units/averaging required; metadata '+meta)
+            for entry in audit.entries:
+                if entry['tab']!='Wind and Pressure' or entry['row']!=st['row'] or entry['variable']!='wind':continue
+                sample=next((x for x in rows if x['wind'] is not None and round(x['wind'],1)==entry['value'] and x['time'].isoformat()==entry['time_utc']),None)
+                if sample:
+                    entry['source_kind']='WeatherSTEM native Anemometer'
+                    entry['sensor_id']=sample['wind_sensor_id']
+                    entry['averaging_period_minutes']=sample['wind_averaging_period_minutes']
+                    entry['averaging_period_basis']=sample['wind_averaging_period_basis']
+                    entry['reporting_interval_minutes']=1
+                    entry['interpretation']='Native observed maximum; averaging semantics require meteorologist review'
+                    if sample.get('direction_time_utc'):entry['direction_time_utc']=sample['direction_time_utc']
+                break
             status='REVIEW REQUIRED' if n else 'METADATA REVIEW'
-            detail=f'{len(rows)} samples; {n}/3 variables. Unsupported pressure and sustained-period metadata left blank. Rainfall sensor/window unvalidated.'
+            detail=f'{len(rows)} samples; {n}/3 variables. Native minute Anemometer maximum retained without rolling average; averaging interval remains review-required unless explicit. Original native gust unchanged. Rainfall sensor/window unvalidated.'
             candidates=[x for x in rows if x.get('unqualified_speed') is not None]
             if candidates:
                 best=max(candidates,key=lambda x:x['unqualified_speed'])
