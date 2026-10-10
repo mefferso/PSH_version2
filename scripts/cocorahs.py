@@ -107,6 +107,32 @@ def export_total(records,start,end):
     if not paths or max(paths)-min(paths)>.005:return None
     return paths[0]
 
+def observed_partial_sum(records,start,end):
+    """Best nonoverlapping observed accumulation subset wholly inside window.
+
+    Prioritize covered time, not rainfall magnitude. Never split a daily
+    measurement at storm boundaries or sum parallel overlapping reports.
+    """
+    values={}
+    for r in records:
+        a,b,v=r.get('start'),r.get('end'),r.get('value')
+        if a is None or b is None or v is None or not start<=a<b<=end:continue
+        key=(a,b)
+        if key in values and abs(values[key]-v)>.005:return None
+        values[key]=v
+    times=sorted({t for pair in values for t in pair})
+    if not times:return None
+    best={t:(0,0.0,[]) for t in times}
+    for index,t in enumerate(times):
+        if index and best[times[index-1]][0]>best[t][0]:
+            best[t]=best[times[index-1]]
+        for (a,b),v in values.items():
+            if a!=t:continue
+            current=best[a];candidate=(current[0]+(b-a).total_seconds(),current[1]+v,current[2]+[(a,b,v)])
+            if candidate[0]>best[b][0]:best[b]=candidate
+    covered,total,used=best[times[-1]]
+    return (total,covered/3600,used) if used else None
+
 def nearby_complete_total(records,start,end,tolerance_hours=2):
     """Find an independently continuous station window near requested bounds.
 
@@ -197,6 +223,15 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
             e['accumulation_kind']='sum_of_reported_daily_accumulations';e['reports']=candidates
         status='REVIEW REQUIRED' if value is not None else 'INTERVAL REVIEW' if candidates else 'ERROR' if error else 'NO REPORTS'
         if value is None and records:
+            partial_sum=observed_partial_sum(records,a,b)
+            if partial_sum and sheet.cell(st['row'],8).value is None:
+                amount,hours,used=partial_sum
+                amount=round(amount,2)
+                sheet.cell(st['row'],8).value=amount;sheet.cell(st['row'],9).value='I'
+                e=audit.add('Rainfall',st['row'],st['id'],'rain',amount,'in',b,url,
+                    interval_start=a,status='INCOMPLETE',details=f'Observed subset {hours:.1f}/{(b-a).total_seconds()/3600:.1f} hours; missing time NOT estimated; '+detail)
+                e['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
+                counts['cocorahs_incomplete_populated']+=1
             nearby=nearby_complete_total(records,a,b)
             if nearby:
                 amount,obs_start,obs_end=nearby
