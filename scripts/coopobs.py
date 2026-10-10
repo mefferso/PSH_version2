@@ -10,7 +10,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from zoneinfo import ZoneInfo
 import requests
-from cocorahs import rain_bounds,export_total
+from cocorahs import rain_bounds,export_total,nearby_complete_total
 from common import inventory,finite,public_url
 
 URL='https://mesonet.agron.iastate.edu/cgi-bin/request/coopobs.py'
@@ -62,6 +62,14 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
             if records:candidates.extend((record,url,network) for record in records)
             total=export_total(records,a,b)
             if total is not None:qualified.append((total,url,network,records))
+        if not qualified and candidates:
+            nearby=[(nearby_complete_total([r for r,u,n in candidates if n==network],a,b),network)
+                    for network in NETWORKS]
+            for item,network in nearby:
+                if item:
+                    amount,observed_start,observed_end=item
+                    issues.append(f'NEARBY COMPLETE COOP WINDOW {network}: {amount:.2f} in {observed_start.isoformat()} to {observed_end.isoformat()} (REVIEW ONLY; not requested period)')
+                    counts['iem_coop_nearby_complete_review']+=1
         detail='Exact IEM COOP daily reports with local observation times; no assumption of missing day precipitation. '+ '; '.join(issues)
         if len(qualified)==1:
             amount,url,network,records=qualified[0]
