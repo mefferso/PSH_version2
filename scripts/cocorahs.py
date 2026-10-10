@@ -13,6 +13,9 @@ def canonical(sid):
 
 def rain_bounds(start,end):
     a,b=bounds(start,end)
+    # Daily volunteer gauges commonly use morning observation boundaries.
+    # Align default to 12 UTC; explicit user bounds always win.
+    a+=dt.timedelta(hours=12);b+=dt.timedelta(hours=12)
     if os.environ.get('RAIN_START_UTC') or os.environ.get('RAIN_END_UTC'):
         a=timestamp(os.environ.get('RAIN_START_UTC'));b=timestamp(os.environ.get('RAIN_END_UTC'))
         if not a or not b or a>=b or b-a>dt.timedelta(days=36):raise ValueError('Invalid explicit rainfall UTC window')
