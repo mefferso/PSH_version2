@@ -35,10 +35,10 @@ class ImportTests(unittest.TestCase):
         self.assertEqual(self.w['Water Level'].cell(10,8).value,'NAVD88')
     def test_rainfall_must_cover_explicit_window(self):
         reading=self.reading(tab='Rainfall',row=98,site_id='LA-AS-02',network='CoCoRaHS',
-            variable='rain',value=4.2,unit='in',time_utc='2024-09-12T00:00:00Z',
+            variable='rain',value=4.2,unit='in',time_utc='2024-09-12T12:00:00Z',
             source_url='https://www.cocorahs.org/ViewData/ListDailyPrecipReports.aspx')
         with self.assertRaises(ValueError):imports.apply(self.w,[reading],self.start,self.end,self.audit)
-        reading['interval_start_utc']='2024-09-11T00:00:00Z'
+        reading['interval_start_utc']='2024-09-11T12:00:00Z'
         imports.apply(self.w,[reading],self.start,self.end,self.audit)
         self.assertEqual(self.w['Rainfall'].cell(98,8).value,4.2)
 
