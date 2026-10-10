@@ -130,7 +130,21 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                                 'requested_start_utc':a.isoformat(),'requested_end_utc':b.isoformat(),
                                 'classification':'PARTIAL REPORT — NOT A VERIFIED STORM TOTAL',
                                 'source_url':url})
-                    if total is not None:
+                    if total is None and s.cell(r,8).value is None:
+                        from cocorahs import observed_partial_sum
+                        observed=[{'start':x['time']-dt.timedelta(hours=1),'end':x['time'],'value':x['rain']}
+                            for x in rows if x.get('report_type')==3 and x.get('rain') is not None]
+                        partial_sum=observed_partial_sum(observed,a,b)
+                        if partial_sum:
+                            amount,hours,used=partial_sum
+                            amount=round(amount,2)
+                            s.cell(r,8).value=amount;s.cell(r,9).value='I'
+                            entry=audit.add(tab,r,st['id'],'rain',amount,'in',b,url,
+                                interval_start=a,status='INCOMPLETE',
+                                details=detail+f'; observed {hours:.1f} hours of routine METAR rainfall, gaps not estimated')
+                            entry['observed_intervals']=[{'start':x.isoformat(),'end':y.isoformat(),'inches':v} for x,y,v in used]
+                            counts['iem_incomplete_rain_populated']+=1
+                    if total is not None and s.cell(r,8).value is None:
                         s.cell(r,8).value=round(total,2);s.cell(r,9).value='I'
                         audit.add(tab,r,st['id'],'rain',round(total,2),'in',b,url,interval_start=a,details=detail)
                 qc.append([tab,st['id'],st['network'],status,detail,url]);counts['iem_'+status]+=1
