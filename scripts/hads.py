@@ -126,6 +126,8 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 counts['hads_incomplete_populated']+=1
             partial.extend(partial_rows(records,st['id'],a,b,url))
         status='REVIEW REQUIRED' if value is not None else 'ERROR' if error else 'INTERVAL REVIEW' if records else 'NO REPORTS'
+        if value is None and sheet.cell(st['row'],8).value is not None:
+            status='INCOMPLETE — POPULATED'
         qc.append(['Rainfall',st['id'],st['network'],status,detail,url]);counts['hads_'+status]+=1
 
     # Append candidates to the shared rainfall-partials CSV written by CoCoRaHS.
