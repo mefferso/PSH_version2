@@ -33,3 +33,13 @@ class IEMHourlyRainTests(unittest.TestCase):
         text='station,network,valid,precip_in\nMSY,LA_ASOS,2024-09-11 12:00,1\nMSY,LA_ASOS,2024-09-11 12:00,2\n'
         with self.assertRaises(ValueError):
             hourlyprecip.parse(text,'MSY','LA_ASOS',start,start+dt.timedelta(hours=1))
+
+    def test_gap_summary_is_not_treated_as_storm_total(self):
+        a=dt.datetime(2026,10,8,tzinfo=dt.timezone.utc)
+        b=a+dt.timedelta(hours=3)
+        csvdata='station,network,valid,precip_in\nMSY,LA_ASOS,2026-10-08 00:00,0.25\nMSY,LA_ASOS,2026-10-08 02:00,0.75\n'
+        result=hourlyprecip.coverage_details(csvdata,'MSY','LA_ASOS',a,b)
+        self.assertEqual(result['observed_hours'],2)
+        self.assertEqual(result['expected_hours'],3)
+        self.assertEqual(result['observed_sum_inches'],1.0)
+        self.assertEqual(result['missing_hours_utc'],['2026-10-08T01:00:00+00:00'])
