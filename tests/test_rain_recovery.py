@@ -109,3 +109,21 @@ class HadsPartialCandidateTests(unittest.TestCase):
         self.assertEqual(candidates[0]['reported_in'],1.5)
         self.assertEqual(candidates[0]['period_start_utc'],a.isoformat())
         self.assertIn('NOT A VERIFIED STORM TOTAL',candidates[0]['classification'])
+
+class DefaultOperationalRainWindowTests(unittest.TestCase):
+    def test_default_rain_boundaries_match_morning_daily_reports(self):
+        from unittest.mock import patch
+        import os
+        with patch.dict(os.environ,{'RAIN_START_UTC':'','RAIN_END_UTC':''}):
+            a,b=cocorahs.rain_bounds(dt.date(2024,9,10),dt.date(2024,9,12))
+        self.assertEqual(a,dt.datetime(2024,9,10,12,tzinfo=UTC))
+        self.assertEqual(b,dt.datetime(2024,9,13,12,tzinfo=UTC))
+
+    def test_user_explicit_rain_boundaries_take_priority(self):
+        from unittest.mock import patch
+        import os
+        with patch.dict(os.environ,{'RAIN_START_UTC':'2024-09-11T06:00:00Z',
+                                    'RAIN_END_UTC':'2024-09-12T18:00:00Z'}):
+            a,b=cocorahs.rain_bounds(dt.date(2024,9,10),dt.date(2024,9,12))
+        self.assertEqual(a.hour,6)
+        self.assertEqual(b.hour,18)
