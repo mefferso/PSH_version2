@@ -56,6 +56,43 @@ def coverage_details(text,station,network,start,end):
     return {'observed_hours':present,'expected_hours':expected,
             'missing_hours_utc':missing,'observed_sum_inches':round(observed,2)}
 
+def certify_dry_hour(metar_rows,start,end):
+    """Prove an absent hour dry using overlapping zero-precip routine METARs.
+
+    A METAR ending at t gives the preceding one-hour interval. Its value
+    cannot be used for arbitrary calendar hours unless those intervals cover
+    the entire missing hour. PNO and unknown sensor/report types are rejected.
+    """
+    coverage=[]
+    for row in metar_rows:
+        if row.get('report_type')!=3 or row.get('rain')!=0:continue
+        raw=row.get('raw') or {}
+        message=str(raw.get('metar') or '').upper()
+        if 'PNO' in message.split() or not ('AO2' in message.split() or 'AO1' in message.split()):
+            continue
+        t=row['time']
+        coverage.append((t-dt.timedelta(hours=1),t))
+    cursor=start
+    while cursor<end:
+        candidates=[b for a,b in coverage if a<=cursor<b]
+        if not candidates:return False
+        cursor=max(candidates)
+    return True
+
+def recover_missing_dry_hours(text,station,network,start,end,metar_rows):
+    """Add only independently certified zero-precip hours, never guessed rain."""
+    info=coverage_details(text,station,network,start,end)
+    if not info['missing_hours_utc']:return parse(text,station,network,start,end)[0],0
+    certified=[]
+    for iso in info['missing_hours_utc']:
+        t=dt.datetime.fromisoformat(iso)
+        if not certify_dry_hour(metar_rows,t,t+dt.timedelta(hours=1)):
+            return None,0
+        certified.append(t)
+    appended=''.join(f"{station},{network},{t:%Y-%m-%d %H:%M},0.0\\n" for t in certified)
+    total,_,_=parse(text.rstrip('\\n')+'\\n'+appended,station,network,start,end)
+    return total,len(certified)
+
 def populate(wb,qc,start,end,counts,audit):
     a,b=rain_bounds(start,end);sheet=wb['Rainfall']
     stations=[x for x in inventory(wb,'Rainfall') if x['network'].upper() in ('ASOS','AWOS')
@@ -85,6 +122,17 @@ def populate(wb,qc,start,end,counts,audit):
             if count:
                 details=coverage_details(body,sid,network,a,b)
                 findings.append(f"{network}: {count}/{details['expected_hours']} hours, {traces} traces, reported-hours sum {details['observed_sum_inches']:.2f} in (INCOMPLETE where gaps exist); first missing UTC {details['missing_hours_utc'][:6]}")
+            if total is None and count and details['missing_hours_utc']:
+                try:
+                    from iem import collect as metar_collect
+                    metars,metar_url=metar_collect(sid,a.date(),b.date())
+                    recovered,filled=recover_missing_dry_hours(body,sid,network,a,b,metars)
+                    if recovered is not None:
+                        total=recovered
+                        findings.append(f'{network}: recovered {filled} provably dry missing hours from independent routine METAR p01i; no PNO; {public_url(metar_url)}')
+                        counts['iem_hourly_dry_hours_certified']+=filled
+                except (requests.RequestException,ValueError,TypeError):
+                    findings.append(f'{network}: independent METAR dry-hour verification unavailable')
             if total is not None:qualified.append((network,total,url,count,traces))
         status='INCOMPLETE';detail='Processed IEM hourly precipitation; full continuous UTC hourly coverage required. '+ '; '.join(findings)
         if len(qualified)==1:
