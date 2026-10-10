@@ -97,8 +97,11 @@ def build():
         csv.writer(fh).writerow(['station_id','report_type','period_start_utc',
             'period_end_utc','reported_in','requested_start_utc','requested_end_utc',
             'classification','source_url'])
+    with (OUT/'USGS_stage_review.csv').open('w',newline='',encoding='utf-8') as fh:
+        csv.writer(fh).writerow(['site_id','usgs_site_number','peak_gage_height_ft',
+            'peak_time_utc','datum','qualification','source_url'])
     for adapter in collectors():
-        if adapter in (cocorahs.populate,hads.populate):
+        if adapter in (cocorahs.populate,hads.populate,usgs.populate):
             adapter(wb,qc,start,end,counts,audit,output_dir=OUT)
         else:
             adapter(wb,qc,start,end,counts,audit)
