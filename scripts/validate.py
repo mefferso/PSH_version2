@@ -31,7 +31,7 @@ def validate(out=Path('output'),template=Path('Copy of PSHLIX_YYYYALXX_StormName
     if not rain_start or not rain_end or rain_start>=rain_end:raise ValueError('Invalid manifest rainfall window')
     for e in entries:
         key=(e['tab'],e['row'],e['variable'])
-        if key in audit_map:raise ValueError('Duplicate measurement audit')
+        if key in audit_map:raise ValueError(f'Duplicate measurement audit: {key}')
         audit_map[key]=e
         if finite(e['value']) is None or not timestamp(e['time_utc']):raise ValueError('Invalid audit value/time')
         if e['variable']=='rain':
