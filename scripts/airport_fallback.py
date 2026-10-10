@@ -94,3 +94,42 @@ def populate(wb,qc,start,end,counts,audit):
             qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR',
                        'Optional Synoptic fallback failed ('+type(exc).__name__+'); token omitted',URL])
             counts['synoptic_airport_errors']+=1
+
+
+def write_inventory_audit(wb,output_dir):
+    """List source candidates and remaining fields; no coverage claims without requests."""
+    import csv
+    from pathlib import Path
+    path=Path(output_dir)/'Synoptic_inventory_review.csv'
+    path.parent.mkdir(parents=True,exist_ok=True)
+    fields=['tab','station_id','network','source_station_id','eligible_for_synoptic',
+            'wind_missing','wind_direction_missing','gust_missing','gust_direction_missing',
+            'mslp_missing','rain_missing','notes']
+    with path.open('w',newline='',encoding='utf-8') as handle:
+        writer=csv.DictWriter(handle,fieldnames=fields);writer.writeheader()
+        for st in inventory(wb,'Wind and Pressure'):
+            s=wb['Wind and Pressure'];r=st['row'];network=st['network'].upper()
+            eligible=network in ('ASOS','AWOS','CWOP','RAWS')
+            writer.writerow({'tab':'Wind and Pressure','station_id':st['id'],
+                'network':st['network'],'source_station_id':station_id(st['id']) if network in ('ASOS','AWOS') else st['id'],
+                'eligible_for_synoptic':'candidate' if eligible else 'not configured',
+                'wind_missing':s.cell(r,11).value is None,
+                'wind_direction_missing':s.cell(r,12).value is None,
+                'gust_missing':s.cell(r,17).value is None,
+                'gust_direction_missing':s.cell(r,18).value is None,
+                'mslp_missing':s.cell(r,23).value is None,'rain_missing':'',
+                'notes':('Airport fallback queried for blank wind/gust/MSLP or peak direction'
+                         if network in ('ASOS','AWOS') else
+                         'CWOP/RAWS time-series collector already active' if network in ('CWOP','RAWS') else
+                         'No Synoptic wind mapping verified')})
+        for st in inventory(wb,'Rainfall'):
+            s=wb['Rainfall'];network=st['network'].upper()
+            eligible=network in ('ASOS','AWOS','COOP','HADS','RAWS')
+            writer.writerow({'tab':'Rainfall','station_id':st['id'],'network':st['network'],
+                'source_station_id':station_id(st['id']) if network in ('ASOS','AWOS') else st['id'],
+                'eligible_for_synoptic':'candidate' if eligible else 'not configured',
+                'wind_missing':'','wind_direction_missing':'','gust_missing':'',
+                'gust_direction_missing':'','mslp_missing':'',
+                'rain_missing':s.cell(st['row'],8).value is None,
+                'notes':'Synoptic precipitation collector already active' if eligible else 'No Synoptic rain mapping verified'})
+    return path
