@@ -73,7 +73,7 @@ jobs:
       - run: python -m unittest discover -s tests -v
   collect:
     needs: [test, francine]
-    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[PSH-DIAG-ISAIAS]'))) && needs.test.result == 'success' && (needs.francine.result == 'success' || needs.francine.result == 'skipped')
+    if: always() && github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && github.event_name == 'workflow_dispatch' && needs.test.result == 'success' && (needs.francine.result == 'success' || needs.francine.result == 'skipped')
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -95,9 +95,9 @@ jobs:
           RAIN_END_UTC: ${{ inputs.rain_end_utc || '' }}
           PSH_IMPORT_FILE: ${{ inputs.reviewed_import || '' }}
           PSH_DATUM_REGISTRY: ${{ inputs.datum_registry || '' }}
-          STORM_NAME: ${{ inputs.storm_name || 'Hurricane Isaias' }}
-          START_UTC: ${{ inputs.start_utc || '2026-10-08' }}
-          END_UTC: ${{ inputs.end_utc || '2026-10-10' }}
+          STORM_NAME: ${{ inputs.storm_name }}
+          START_UTC: ${{ inputs.start_utc }}
+          END_UTC: ${{ inputs.end_utc }}
         run: python scripts/build.py
       - name: Validate workbook preservation and observation provenance
         run: python scripts/validate.py
