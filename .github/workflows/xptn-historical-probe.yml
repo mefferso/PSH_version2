@@ -1,0 +1,34 @@
+name: XPTN-only WeatherFlow historical source experiment
+on:
+  push:
+    branches: [experiment/xptn-weatherflow-historical-only]
+    paths:
+      - "experiments/xptn_weatherflow_probe.py"
+      - ".github/workflows/xptn-historical-probe.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  xptn:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install standalone probe dependencies
+        run: pip install requests openpyxl
+      - name: Retrieve only XPTN October 8-10 historical data
+        env:
+          SYNOPTIC_TOKEN: ${{ secrets.SYNOPTIC_TOKEN }}
+          WEATHERFLOW_TOKEN: ${{ secrets.WEATHERFLOW_TOKEN }}
+          TEMPEST_TOKEN: ${{ secrets.TEMPEST_TOKEN }}
+        run: python experiments/xptn_weatherflow_probe.py
+      - name: Save isolated results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: XPTN-historical-probe-${{ github.run_number }}
+          path: xptn_probe_results/
+          if-no-files-found: warn
