@@ -37,3 +37,20 @@ class RoutineMETARIdentificationTests(unittest.TestCase):
               'MSY,2024-09-11 02:13,0.70,SPECI KMSY 110213Z 01005KT\n')
         rows=iem.parse(text,'MSY',dt.date(2024,9,11),dt.date(2024,9,11))
         self.assertEqual([x['report_type'] for x in rows],[3,4])
+
+
+class MalformedWindGroupRegression(unittest.TestCase):
+    def test_kpzz_060kt_not_accepted_as_sixty_knot_sustained(self):
+        self.assertFalse(iem.decoded_wind_matches_raw(
+            'KPZZ 082150Z AUTO 060KT 1/2SM BR SCT007 OVC018 26/24 A2974 RMK A01',
+            60, None))
+        self.assertTrue(iem.decoded_wind_matches_raw(
+            'KPZZ 081950Z AUTO 05040G53KT 10SM FEW030 26/24 A2980',40,53))
+        sample=('station,valid,sknt,gust,drct,mslp,p01i,metar\\n'
+                'PZZ,2026-10-08 21:50,60,M,0,M,0.0,KPZZ 082150Z AUTO 060KT 1/2SM BR SCT007 OVC018 26/24 A2974 RMK A01\\n'
+                'PZZ,2026-10-08 19:50,40,53,50,M,0.0,KPZZ 081950Z AUTO 05040G53KT 10SM FEW030\\n')
+        sample=sample.replace('\\n','\n')
+        rows=iem.parse(sample,'KPZZ',dt.date(2026,10,8),dt.date(2026,10,10))
+        self.assertEqual([r['wind'] for r in rows],[None,40])
+        self.assertIsNotNone(rows[0]['raw_wind_qc'])
+
