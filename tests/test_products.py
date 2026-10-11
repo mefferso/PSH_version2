@@ -14,6 +14,29 @@ ROOT = Path(__file__).resolve().parents[1]
 TEMPLATE = ROOT / 'Copy of PSHLIX_YYYYALXX_StormName_Data.xlsx'
 
 class ProductTests(unittest.TestCase):
+    def test_whole_knot_winds_preserve_raw_precision_and_pressure(self):
+        from build import whole_knot_winds
+        w = load_workbook(TEMPLATE)
+        s = w['Wind and Pressure']
+        for row in (2, 3):
+            s.cell(row, 11).value = None
+            s.cell(row, 17).value = None
+        s.cell(2, 11).value = 36.9
+        s.cell(2, 17).value = 52.5
+        s.cell(2, 23).value = 1005.7
+        s.cell(3, 11).value = 25.1
+        audit = common.Audit()
+        t = dt.datetime(2026, 10, 9, tzinfo=dt.timezone.utc)
+        audit.add('Wind and Pressure', 2, 'KMSY', 'wind', 36.9, 'kn', t, 'https://example.com')
+        audit.add('Wind and Pressure', 2, 'KMSY', 'gust', 52.5, 'kn', t, 'https://example.com')
+        whole_knot_winds(w, audit)
+        self.assertEqual([s.cell(2, 11).value, s.cell(2, 17).value, s.cell(3, 11).value], [37, 53, 25])
+        self.assertEqual(s.cell(2, 23).value, 1005.7)
+        self.assertEqual([e['value'] for e in audit.entries], [37, 53])
+        self.assertEqual([e['original_value'] for e in audit.entries], [36.9, 52.5])
+        products.summaries(w)
+        self.assertTrue(all(isinstance(s.cell(2, c).value, int) for c in (11, 17)))
+
     def test_inventory_excludes_footer_preserves_numeric_ids(self):
         w = load_workbook(TEMPLATE)
         rows = list(common.inventory(w, 'Wind and Pressure'))
