@@ -63,7 +63,15 @@ def populate(wb,qc,start,end,counts,audit):
             a,b=bounds(start,end)
             r=requests.get(URL,params={'token':token,'stid':st['id'],'start':a.strftime('%Y%m%d%H%M'),
                 'end':b.strftime('%Y%m%d%H%M'),'vars':'wind_speed,wind_gust,wind_direction,sea_level_pressure','obtimezone':'utc'},timeout=20)
-            r.raise_for_status();rows=parse(r.json(),st['id'],start,end,network=st['network'])
+            r.raise_for_status()
+            payload=r.json()
+            rejected=provider_status(payload)
+            if rejected:
+                qc.append(['Wind and Pressure',st['id'],st['network'],'PROVIDER REJECTED',
+                           'Synoptic '+rejected+' for exact station; no observation inferred',URL])
+                counts['synoptic_provider_rejected']+=1
+                continue
+            rows=parse(payload,st['id'],start,end,network=st['network'])
             from common import public_url
             qualified=[x for x in rows if x.get('wind') is not None]
             inferred=[x for x in qualified if 'convention' in x.get('wind_period_basis','')]
@@ -94,6 +102,18 @@ def populate(wb,qc,start,end,counts,audit):
             kind=safe_failure_kind(exc)
             qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR','Synoptic '+kind+'; token redacted',URL])
             counts['synoptic_errors']+=1
+
+def provider_status(payload):
+    """Classify returned provider rejections without leaking messages/tokens."""
+    if not isinstance(payload, dict):
+        return 'invalid JSON structure'
+    summary=payload.get('SUMMARY') or {}
+    if not isinstance(summary, dict):
+        return 'invalid response summary'
+    code=summary.get('RESPONSE_CODE')
+    if code == 1:
+        return None
+    return 'provider response code '+str(code) if isinstance(code,int) else 'provider response missing valid code'
 
 def safe_failure_kind(error):
     """Safe, actionable error category; never include request URLs or secrets."""
@@ -208,6 +228,9 @@ def populate_rain(wb,qc,start,end,counts,audit):
             r=requests.get(PRECIP_URL,params=params,timeout=20)
             r.raise_for_status()
             payload=r.json()
+            rejected=provider_status(payload)
+            if rejected:
+                return st,None,public_url(r.url),'PROVIDER REJECTED',payload
             value=precip_total(payload,sid,a,b)
             if value is not None:
                 return st,value,public_url(r.url),'REVIEW REQUIRED',payload
@@ -224,6 +247,8 @@ def populate_rain(wb,qc,start,end,counts,audit):
         detail='Exact ID and units; native Synoptic reported intervals, verified report frequency/count and nonoverlapping UTC coverage. Provider-derived amounts require review. '+PRECIP_DOC
         records=[x for station in (payload or {}).get('STATION',[]) if station.get('STID')==(('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']) for x in precipitation_records(station)]
         if error_kind:detail+='; failure category: '+error_kind+'; credentials redacted'
+        if status=='PROVIDER REJECTED':
+            detail+='; '+str(provider_status(payload))+'; station source rejected request; credentials redacted'
         if records:
             import json
             detail+='; returned interval candidates: '+json.dumps(records,allow_nan=False)

@@ -4,6 +4,14 @@ import unittest
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'scripts'))
 import synoptic
+class ProviderRejectionTests(unittest.TestCase):
+    def test_safe_provider_code(self):
+        self.assertIsNone(synoptic.provider_status({'SUMMARY':{'RESPONSE_CODE':1}}))
+        self.assertEqual(synoptic.provider_status({'SUMMARY':{'RESPONSE_CODE':2,'RESPONSE_MESSAGE':'secret token abc'}}),'provider response code 2')
+        self.assertEqual(synoptic.provider_status({'SUMMARY':{}}),'provider response missing valid code')
+        self.assertEqual(synoptic.provider_status([]),'invalid JSON structure')
+
+
 class SynopticTests(unittest.TestCase):
     def test_units_identity_and_variable_specific_direction(self):
         data={'SUMMARY':{'RESPONSE_CODE':1},'UNITS':{'wind_speed':'m/s','wind_gust':'m/s','sea_level_pressure':'Pa','wind_direction':'Degrees'},'STATION':[{'STID':'BBNL1','SENSOR_VARIABLES':{'wind_speed':{'wind_speed_set_1':{'averaging_period_minutes':2}}},'OBSERVATIONS':{'date_time':['2024-09-11T12:00:00Z'],'wind_speed_set_1':[10],'wind_gust_set_1':[15],'wind_direction_set_1':[90],'sea_level_pressure_set_1':[99000]}}]}
