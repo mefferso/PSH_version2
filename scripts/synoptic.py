@@ -88,9 +88,23 @@ def populate(wb,qc,start,end,counts,audit):
                 detail+=f' Unqualified speed peak {peak["wind_original_value"]} {peak["wind_original_unit"]} at {peak["time"].isoformat()} withheld from PSH sustained column.'
             qc.append(['Wind and Pressure',st['id'],st['network'],'REVIEW REQUIRED' if n else 'METADATA REVIEW' if candidates else 'NO DATA',detail,public_url(r.url)])
             counts['synoptic_collected' if n else 'synoptic_no_data']+=1
-        except (requests.RequestException,ValueError,KeyError,TypeError):
-            # Requests exceptions can contain the credential-bearing URL.
-            qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR','Synoptic request/schema unsuccessful; token redacted',URL]);counts['synoptic_errors']+=1
+        except (requests.RequestException,ValueError,KeyError,TypeError) as exc:
+            # Only report safe type/status; never serialize request URLs or errors
+            # because exception messages can include the credential token.
+            kind=safe_failure_kind(exc)
+            qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR','Synoptic '+kind+'; token redacted',URL])
+            counts['synoptic_errors']+=1
+
+def safe_failure_kind(error):
+    """Safe, actionable error category; never include request URLs or secrets."""
+    if isinstance(error, requests.HTTPError):
+        code = getattr(getattr(error, 'response', None), 'status_code', None)
+        return f'HTTP {code}' if isinstance(code, int) else 'HTTP error'
+    if isinstance(error, requests.Timeout):return 'timeout'
+    if isinstance(error, requests.ConnectionError):return 'connection error'
+    if isinstance(error, requests.RequestException):return 'network/request error'
+    if isinstance(error, (ValueError, KeyError, TypeError)):return 'response schema/parse error'
+    return 'unknown failure'
 
 PRECIP_URL='https://api.synopticdata.com/v2/stations/precip'
 
@@ -201,11 +215,15 @@ def populate_rain(wb,qc,start,end,counts,audit):
             r2=requests.get(PRECIP_URL,params=params,timeout=20)
             r2.raise_for_status()
             return st,None,public_url(r2.url),'INCOMPLETE',r2.json()
-        except (requests.RequestException,ValueError,TypeError,KeyError):return st,None,None,'ERROR',None
+        except (requests.RequestException,ValueError,TypeError,KeyError) as exc:
+            return st,None,None,'ERROR: '+safe_failure_kind(exc),None
     with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
     for st,value,url,status,payload in results:
+        error_kind=status.partition(': ')[2] if status.startswith('ERROR: ') else None
+        if error_kind:status='ERROR'
         detail='Exact ID and units; native Synoptic reported intervals, verified report frequency/count and nonoverlapping UTC coverage. Provider-derived amounts require review. '+PRECIP_DOC
         records=[x for station in (payload or {}).get('STATION',[]) if station.get('STID')==(('K'+st['id']) if st['network'].upper() in ('ASOS','AWOS') and len(st['id'])==3 else st['id']) for x in precipitation_records(station)]
+        if error_kind:detail+='; failure category: '+error_kind+'; credentials redacted'
         if records:
             import json
             detail+='; returned interval candidates: '+json.dumps(records,allow_nan=False)
