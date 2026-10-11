@@ -13,6 +13,28 @@ def station_id(value):
     sid=identifier(value).upper()
     return sid[1:] if len(sid)==4 and sid.startswith('K') else sid
 
+def decoded_wind_matches_raw(metar, speed, gust):
+    """Do not promote parsed wind when the raw METAR wind group is malformed.
+
+    Applies only to genuine METAR/SPECI text, not standalone high-frequency
+    ASOS records. A raw group needs DDD or VRB, speed, optional gust, KT.
+    """
+    if speed is None and gust is None:
+        return True
+    tokens=str(metar or '').upper().split()
+    time_idx=next((i for i,t in enumerate(tokens[:6]) if re.fullmatch(r'\\d{6}Z',t)),None)
+    if time_idx is None:
+        return True  # No independently checkable raw wind group.
+    search=tokens[time_idx+1:time_idx+5]
+    wind_tokens=[t for t in search if t.endswith('KT')]
+    if not wind_tokens:
+        return True  # Absent raw group is not proof of a bad decoded field.
+    valid=next((t for t in wind_tokens if re.fullmatch(r'(?:\\d{3}|VRB)\\d{2,3}(?:G\\d{2,3})?KT',t)),None)
+    if valid is None:return False
+    match=re.fullmatch(r'(?:\\d{3}|VRB)(\\d{2,3})(?:G(\\d{2,3}))?KT',valid)
+    return ((speed is None or int(match.group(1))==int(speed))
+            and (gust is None or match.group(2) is None or int(match.group(2))==int(gust)))
+
 def parse(text,station,start,end):
     reader=csv.DictReader(io.StringIO(text))
     if not reader.fieldnames or not {'station','valid'}.issubset(reader.fieldnames):
@@ -23,7 +45,15 @@ def parse(text,station,start,end):
         try:t=dt.datetime.strptime(raw['valid'],'%Y-%m-%d %H:%M').replace(tzinfo=UTC)
         except (ValueError,TypeError):continue
         if not begin<=t<stop:continue
-        rows.append({'time':t,'wind':finite(raw.get('sknt'),0,180),'gust':finite(raw.get('gust'),0,200),
+        reported_wind=finite(raw.get('sknt'),0,180)
+        reported_gust=finite(raw.get('gust'),0,200)
+        is_high_frequency='MADISHF' in (raw.get('metar') or '')
+        raw_conflict=(not is_high_frequency and not decoded_wind_matches_raw(raw.get('metar'),reported_wind,reported_gust))
+        if raw_conflict:
+            reported_wind=None
+            reported_gust=None
+        rows.append({'time':t,'wind':reported_wind,'gust':reported_gust,
+                     'raw_wind_qc':'Malformed or conflicting METAR wind group; decoded wind/gust withheld' if raw_conflict else None,
                      'dir':finite(raw.get('drct'),0,360),'pressure':finite(raw.get('mslp'),850,1100),
                      'rain':finite(raw.get('p01i'),0,25),'trace':raw.get('p01i')=='T',
                      'report_type':(1 if 'MADISHF' in (raw.get('metar') or '') else 4 if str(raw.get('metar') or '').lstrip().upper().startswith('SPECI ') else 3 if str(raw.get('metar') or '').strip() else None),'raw':raw,
@@ -119,6 +149,12 @@ def populate(wb,qc,start,end,counts,audit,output_dir=None):
                 rows,url=get(st['id']);r=st['row']
                 if tab=='Wind and Pressure':
                     wind_rows=[dict(x) for x in rows if bounds(start,end)[0]<=x['time']<bounds(start,end)[1]]
+                    conflicted=[x for x in wind_rows if x.get('raw_wind_qc')]
+                    if conflicted:
+                        qc.append(['Wind and Pressure',st['id'],st['network'],'RAW WIND QC',
+                                   f'{len(conflicted)} raw METAR wind group(s) malformed or disagree with decoded fields; speed/gust withheld while pressure retained; UTC samples: '+', '.join(x['time'].isoformat() for x in conflicted[:8]),
+                                   url])
+                        counts['iem_raw_wind_qc']+=len(conflicted)
                     comparison=[]
                     for kind in ('METAR/SPECI','ASOS five-minute report'):
                         good=[x for x in wind_rows if x.get('wind') is not None and x.get('source_kind')==kind]
