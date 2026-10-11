@@ -78,6 +78,12 @@ try:
     record["mentions_XPTN"]="XPTN" in r.text.upper()
     record["mentions_7532"]="7532" in r.text
     record["visible_calendar_dates"]=sorted(set(re.findall(r"(?:10[/.-](?:0?[89]|10)[/.-]2026|2026[/.-]10[/.-](?:0?[89]|10))",r.text)))[:10]
+    # Preserve only structural evidence, never trust naked numbers as observations.
+    record["html_forms"]=[{"action":a[:180],"method":m} for m,a in re.findall(r'<form[^>]*method=["\\\']?(get|post)[^>]*action=["\\\']?([^"\\\' >]+)',r.text,re.I)[:10]]
+    record["internal_paths"]=list(dict.fromkeys(re.findall(r'(?:href|src)=["\\\']([^"\\\']+)',r.text,re.I)))[:30]
+    record["page_table_count"]=len(re.findall(r'<table(?:\\s|>)',r.text,re.I))
+    record["table_row_count"]=len(re.findall(r'<tr(?:\\s|>)',r.text,re.I))
+    record["relevant_line_samples"]=[re.sub(r'<[^>]+>',' ',line).strip()[:180] for line in r.text.splitlines() if re.search(r'(?:2026|archive|histor|download|graph|hourly|timeseries|windAndWhere|windHistory)',line,re.I)][:22]
     record["warning"]="Web page is not an authenticated observation API; no historical readings accepted unless independently parsed with timestamps/units"
     results["sources"]["iwindsurf_page"]=record
 except Exception as exc:results["sources"]["iwindsurf_page"]={"error_class":type(exc).__name__,"requested":True}
