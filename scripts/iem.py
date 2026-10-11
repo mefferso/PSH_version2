@@ -22,16 +22,16 @@ def decoded_wind_matches_raw(metar, speed, gust):
     if speed is None and gust is None:
         return True
     tokens=str(metar or '').upper().split()
-    time_idx=next((i for i,t in enumerate(tokens[:6]) if re.fullmatch(r'\\d{6}Z',t)),None)
+    time_idx=next((i for i,t in enumerate(tokens[:6]) if re.fullmatch(r'\d{6}Z',t)),None)
     if time_idx is None:
         return True  # No independently checkable raw wind group.
     search=tokens[time_idx+1:time_idx+5]
     wind_tokens=[t for t in search if t.endswith('KT')]
     if not wind_tokens:
         return True  # Absent raw group is not proof of a bad decoded field.
-    valid=next((t for t in wind_tokens if re.fullmatch(r'(?:\\d{3}|VRB)\\d{2,3}(?:G\\d{2,3})?KT',t)),None)
+    valid=next((t for t in wind_tokens if re.fullmatch(r'(?:\d{3}|VRB)\d{2,3}(?:G\d{2,3})?KT',t)),None)
     if valid is None:return False
-    match=re.fullmatch(r'(?:\\d{3}|VRB)(\\d{2,3})(?:G(\\d{2,3}))?KT',valid)
+    match=re.fullmatch(r'(?:\d{3}|VRB)(\d{2,3})(?:G(\d{2,3}))?KT',valid)
     return ((speed is None or int(match.group(1))==int(speed))
             and (gust is None or match.group(2) is None or int(match.group(2))==int(gust)))
 
