@@ -66,6 +66,38 @@ def coverage(wb,qc,counts,audit):
     for tab in ('Inland Flooding','Impacts'):
         qc.append([tab,'','','MANUAL REVIEW','No verified storm-specific impact narrative; unknown fatalities/injuries/evacuations remain blank',''])
 
+def whole_knot_winds(wb, audit):
+    """Publish wind/gust speeds as whole knots; retain source precision in provenance.
+
+    Half knots round upward, not Python's ties-to-even. MSLP, water levels,
+    rain amounts, wind direction and original source values are unchanged.
+    """
+    from decimal import Decimal, ROUND_HALF_UP
+    sheet = wb['Wind and Pressure']
+    rounded = {}
+    for station in inventory(wb, 'Wind and Pressure'):
+        row = station['row']
+        for variable, column in (('wind', 11), ('gust', 17)):
+            value = sheet.cell(row, column).value
+            if value is None:
+                continue
+            original = float(value)
+            integer = int(Decimal(str(original)).quantize(Decimal('1'), rounding=ROUND_HALF_UP))
+            sheet.cell(row, column).value = integer
+            sheet.cell(row, column).number_format = '0'
+            rounded[(row, variable)] = (original, integer)
+    for entry in audit.entries:
+        key = (entry['row'], entry['variable'])
+        if entry['tab'] != 'Wind and Pressure' or key not in rounded:
+            continue
+        source, integer = rounded[key]
+        # Audit.value describes the published cell. Original source precision is
+        # available in original_value/original_unit, or this explicit field.
+        if float(entry['value']) != float(integer):
+            entry['pre_rounding_value_kn'] = entry['value']
+        entry['value'] = integer
+
+
 def build():
     name=os.environ['STORM_NAME'].strip();start=dt.date.fromisoformat(os.environ['START_UTC']);end=dt.date.fromisoformat(os.environ['END_UTC'])
     if not re.fullmatch(r'[A-Za-z0-9 -]{2,70}',name):raise ValueError('Invalid storm name')
@@ -113,6 +145,7 @@ def build():
     rain_archive_review.populate(wb,qc,start,end,counts,audit,output_dir=OUT)
     if os.environ.get('PSH_IMPORT_FILE'):imports.load(wb,os.environ['PSH_IMPORT_FILE'],start,end,audit)
     coverage(wb,qc,counts,audit)
+    whole_knot_winds(wb,audit)
     import observation_review
     observation_review.write(wb,audit,*bounds(start,end),a,b,OUT)
     airport_fallback.write_inventory_audit(wb,OUT)
