@@ -81,3 +81,38 @@ class CWOPConventionalWindTests(unittest.TestCase):
         data['STATION'][0]['SENSOR_VARIABLES']['wind_speed']['wind_speed_set_1']['averaging_period_minutes']=5
         row=synoptic.parse(data,'AV585',dt.date(2026,10,9),dt.date(2026,10,9),network='CWOP')[0]
         self.assertIsNone(row['wind'])
+
+
+class SynopticRetryTests(unittest.TestCase):
+    def test_retry_http_429_then_recover_same_exact_station(self):
+        class Response:
+            def __init__(self,status,payload):
+                self.status_code=status
+                self.payload=payload
+            def json(self):return self.payload
+            def raise_for_status(self):
+                if self.status_code>=400:
+                    import requests
+                    raise requests.HTTPError('status')
+        responses=[
+            Response(200,{'SUMMARY':{'RESPONSE_CODE':2,'HTTP_STATUS_CODE':429}}),
+            Response(200,{'SUMMARY':{'RESPONSE_CODE':1},'STATION':[{'STID':'EXACT'}]})
+        ]
+        seen=[]
+        def get(url,params,timeout):
+            seen.append(dict(params))
+            return responses.pop(0)
+        result,payload=synoptic.request_synoptic('https://example.com',{'stid':'EXACT'},20,get=get,pause=lambda _:None)
+        self.assertEqual(len(seen),2)
+        self.assertEqual([x['stid'] for x in seen],['EXACT','EXACT'])
+        self.assertEqual(payload['SUMMARY']['RESPONSE_CODE'],1)
+    def test_zero_results_not_retried(self):
+        class Response:
+            status_code=200
+            def json(self):return {'SUMMARY':{'RESPONSE_CODE':2}}
+            def raise_for_status(self):pass
+        seen=[]
+        r,p=synoptic.request_synoptic('https://example.com',{'stid':'MISSING'},20,get=lambda *a,**kw:(seen.append(1) or Response()),pause=lambda _:None)
+        self.assertEqual(len(seen),1)
+        self.assertEqual(synoptic.provider_status({'SUMMARY':{'RESPONSE_CODE':2,'HTTP_STATUS_CODE':429}}),'provider response code 2; provider HTTP status 429')
+

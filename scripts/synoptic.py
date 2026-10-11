@@ -1,5 +1,6 @@
 """Credential-gated exact-ID Synoptic/MesoWest archived wind and MSLP."""
 import os
+import time
 import requests
 from common import inventory,finite,bounds,timestamp,elapsed_window
 from iem import write_wind
@@ -61,10 +62,8 @@ def populate(wb,qc,start,end,counts,audit):
             qc.append(['Wind and Pressure',st['id'],st['network'],'CREDENTIAL REQUIRED','SYNOPTIC_TOKEN required for exact-ID historical timeseries',st['url']]);counts['synoptic_credential_required']+=1;continue
         try:
             a,b=bounds(start,end)
-            r=requests.get(URL,params={'token':token,'stid':st['id'],'start':a.strftime('%Y%m%d%H%M'),
-                'end':b.strftime('%Y%m%d%H%M'),'vars':'wind_speed,wind_gust,wind_direction,sea_level_pressure','obtimezone':'utc'},timeout=20)
-            r.raise_for_status()
-            payload=r.json()
+            r,payload=request_synoptic(URL,{'token':token,'stid':st['id'],'start':a.strftime('%Y%m%d%H%M'),
+                'end':b.strftime('%Y%m%d%H%M'),'vars':'wind_speed,wind_gust,wind_direction,sea_level_pressure','obtimezone':'utc'},20)
             rejected=provider_status(payload)
             if rejected:
                 qc.append(['Wind and Pressure',st['id'],st['network'],'PROVIDER REJECTED',
@@ -103,6 +102,28 @@ def populate(wb,qc,start,end,counts,audit):
             qc.append(['Wind and Pressure',st['id'],st['network'],'ERROR','Synoptic '+kind+'; token redacted',URL])
             counts['synoptic_errors']+=1
 
+def request_synoptic(url, params, timeout, get=None, pause=None):
+    """Bounded retry of genuine 429 throttling; never retry zero-result stations."""
+    getter=get or requests.get
+    sleeper=pause or time.sleep
+    for attempt in range(3):
+        response=getter(url,params=params,timeout=timeout)
+        payload=None
+        try:
+            payload=response.json()
+        except ValueError:
+            pass
+        summary=(payload or {}).get('SUMMARY') or {} if isinstance(payload,dict) else {}
+        upstream=summary.get('HTTP_STATUS_CODE') if isinstance(summary,dict) else None
+        throttled=response.status_code==429 or upstream==429
+        if throttled and attempt<2:
+            sleeper(min(2 ** attempt, 2))
+            continue
+        response.raise_for_status()
+        return response,payload
+    raise ValueError('Unexpected retry exhaustion')
+
+
 def provider_status(payload):
     """Classify returned provider rejections without leaking messages/tokens."""
     if not isinstance(payload, dict):
@@ -111,9 +132,12 @@ def provider_status(payload):
     if not isinstance(summary, dict):
         return 'invalid response summary'
     code=summary.get('RESPONSE_CODE')
+    http=summary.get('HTTP_STATUS_CODE')
     if code == 1:
         return None
-    return 'provider response code '+str(code) if isinstance(code,int) else 'provider response missing valid code'
+    detail='provider response code '+str(code) if isinstance(code,int) else 'provider response missing valid code'
+    if isinstance(http,int):detail+='; provider HTTP status '+str(http)
+    return detail
 
 def safe_failure_kind(error):
     """Safe, actionable error category; never include request URLs or secrets."""
@@ -225,9 +249,7 @@ def populate_rain(wb,qc,start,end,counts,audit):
                 'end':b.strftime('%Y%m%d%H%M'),'pmode':'intervals','interval':'day',
                 'interval_window':'0','units':'english,precip|in','obtimezone':'UTC',
                 'all_reports':0,'complete':1}
-            r=requests.get(PRECIP_URL,params=params,timeout=20)
-            r.raise_for_status()
-            payload=r.json()
+            r,payload=request_synoptic(PRECIP_URL,params,20)
             rejected=provider_status(payload)
             if rejected:
                 return st,None,public_url(r.url),'PROVIDER REJECTED',payload
@@ -235,9 +257,8 @@ def populate_rain(wb,qc,start,end,counts,audit):
             if value is not None:
                 return st,value,public_url(r.url),'REVIEW REQUIRED',payload
             params.update(all_reports=1,complete=0)
-            r2=requests.get(PRECIP_URL,params=params,timeout=20)
-            r2.raise_for_status()
-            return st,None,public_url(r2.url),'INCOMPLETE',r2.json()
+            r2,payload2=request_synoptic(PRECIP_URL,params,20)
+            return st,None,public_url(r2.url),'INCOMPLETE',payload2
         except (requests.RequestException,ValueError,TypeError,KeyError) as exc:
             return st,None,None,'ERROR: '+safe_failure_kind(exc),None
     with ThreadPoolExecutor(max_workers=6) as pool:results=list(pool.map(fetch,stations))
